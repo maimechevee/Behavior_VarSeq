@@ -1,9 +1,7 @@
 import matplotlib.pyplot as plt
-import scipy.stats as stats
 import numpy as np
 import math
 import matplotlib
-from statistics import mean
 from create_medpc_master import create_medpc_master
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
@@ -15,7 +13,6 @@ dates=['20211202', '20211203', '20211204', '20211205', '20211206', '20211207', '
 master_df = create_medpc_master(mice,dates)
 
 # Had a problem with extracting data from '2021-12-12_16h47m_Subject 4241.txt'
-# Also we are missing one file still, so these graphs might not give the full picture
 
 # Taken from Reward_across_training
 discard_list = [4217, 4218, 4221, 4227, 4232, 4235, 4236, 4237, 4238, 4244]     
@@ -24,30 +21,46 @@ for mouse in discard_list:
     indices.append(master_df[master_df['Mouse']==mouse].index)
 indices=[x for l in indices for x in l]
 master_df=master_df.drop(indices, axis=0)
-
 num_days_training = len(np.unique(master_df['Date']))
 mice = np.unique(master_df['Mouse'])  
 
-# Contains median session variance for each mouse/day combo    
+# Contains median session variance for each mouse/day combo   
 Variance_FR5 = [[] for i in range(num_days_training - 2)]
 Variance_FR5var = [[] for i in range(num_days_training - 2)]
+
+fig,ax=plt.subplots(1,1)
 
 for i in range(len(mice)):
     curr_mouse = mice[i]
     curr_mouse_df = (master_df[master_df['Mouse']==curr_mouse]).reset_index()
-    curr_mouse_variance = (curr_mouse_df['Variance'])
-    mouse_group = curr_mouse_df.iloc[13]['Protocol'][41:] #Grab last day protocol to put mouse in group
-    for j in range(num_days_training):
-        try:
-            curr_variance = curr_mouse_variance[j]
-            if curr_variance is not None:
-                # Can't find file for 4234 on the 13th -> so check if nan
-                if 'va2' not in mouse_group and not math.isnan(np.mean(curr_variance)):
-                    Variance_FR5[j - 2].append(np.median(curr_variance))
-                elif not math.isnan(np.mean(curr_variance)):
-                    Variance_FR5var[j - 2].append(np.median(curr_variance))
-        except:
-            print(f'Error finding variance data for {curr_mouse}')
+    exclude_FR1 = [curr_mouse_df['Variance'][ind] is not None for ind in range(len(curr_mouse_df))]
+    curr_mouse_df = (curr_mouse_df[exclude_FR1]).reset_index()
+    curr_mouse_variance = curr_mouse_df['Variance']
+    mouse_group = curr_mouse_df.iloc[-1]['Protocol'][41:] #Grab last day protocol to put mouse in group
+    if 'va2' not in mouse_group:
+        plt.plot([np.mean(day) for day in curr_mouse_variance], linewidth = 1, linestyle = '--', color = 'tomato')
+    else:
+        plt.plot([np.mean(day) for day in curr_mouse_variance], linewidth = 1, linestyle = '--', color = 'cornflowerblue')
+    for j in range(curr_mouse_variance.size):
+        curr_variance = curr_mouse_variance[j]
+        # Can't find file for 4234 on the 13th -> so check if nan
+        if 'va2' not in mouse_group and not math.isnan(np.median(curr_variance)):
+            Variance_FR5[j].append(np.median(curr_variance))
+        elif not math.isnan(np.median(curr_variance)):
+            Variance_FR5var[j].append(np.median(curr_variance))
+        
+
+plt.vlines(3.5,0,70, color='k', linestyle='dashed')
+plt.xlabel('Time from first FR5 session (day)', size=16)
+plt.xticks(fontsize=14)
+plt.ylabel('Individual session variance medians', size=16)
+plt.yticks(fontsize=14)
+plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='upper right')
+leg = ax.get_legend()
+leg.legendHandles[0].set_color('tomato')
+leg.legendHandles[1].set_color('cornflowerblue')
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
 
 # Take mean of median and median of median
 Variance_means_FR5 = [np.mean(day) for day in Variance_FR5 if day]
@@ -64,19 +77,19 @@ FR5var_lower = [a-b for a,b in zip(Variance_means_FR5var,Variance_sem_FR5var)]
 FR5var_upper = [a+b for a,b in zip(Variance_means_FR5var,Variance_sem_FR5var)]
 
 # Plot Mean of Medians
-# Had to add 1 to FR5 since I need to make the IPI/Var vectors for the first day
+
 fig,ax=plt.subplots(1,1)
-plt.plot([i+1 for i in range(11)], Variance_means_FR5, linewidth=2, color='tomato')
-plt.vlines([i+1 for i in range(11)], FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
+plt.plot(Variance_means_FR5, linewidth=2, color='tomato')
+plt.vlines(range(len(Variance_means_FR5var)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
 plt.plot(Variance_means_FR5var, linewidth=2, color='cornflowerblue')
 plt.vlines(range(len(Variance_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
 
-plt.vlines(3.5,0,5, color='k', linestyle='dashed')
+plt.vlines(3.5,0,7, color='k', linestyle='dashed')
 plt.xlabel('Time from first FR5 session (day)', size=16)
 plt.xticks(fontsize=14)
 plt.ylabel('Means of session variance medians', size=16)
 plt.yticks(fontsize=14)
-plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='lower right')
+plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='upper right')
 leg = ax.get_legend()
 leg.legendHandles[0].set_color('tomato')
 leg.legendHandles[1].set_color('cornflowerblue')
@@ -85,8 +98,8 @@ ax.spines['top'].set_visible(False)
 
 # Plot Median of Medians
 fig,ax=plt.subplots(1,1)
-plt.plot([i+1 for i in range(11)], Variance_med_FR5, linewidth=2, color='tomato')
-# plt.vlines([i+1 for i in range(11)], FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
+plt.plot(range(len(Variance_means_FR5)), Variance_med_FR5, linewidth=2, color='tomato')
+# plt.vlines(range(len(Variance_means_FR5)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
 plt.plot(Variance_med_FR5var, linewidth=2, color='cornflowerblue')
 # plt.vlines(range(len(Variance_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
 
@@ -95,7 +108,7 @@ plt.xlabel('Time from first FR5 session (day)', size=16)
 plt.xticks(fontsize=14)
 plt.ylabel('Median of session variance medians', size=16)
 plt.yticks(fontsize=14)
-plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='lower right')
+plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='upper right')
 leg = ax.get_legend()
 leg.legendHandles[0].set_color('tomato')
 leg.legendHandles[1].set_color('cornflowerblue')

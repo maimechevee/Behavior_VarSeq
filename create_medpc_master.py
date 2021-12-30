@@ -1,20 +1,23 @@
 import pandas as pd
 import numpy as np
 import os
-import datetime
 import math
-from tkinter.filedialog import askdirectory
+import datetime
 
-# Returns dictionary with Protocol, Reward, Lever, Lick, IPI, Variance
+# Returns dictionary with Protocol, Run Time, Reward, Lever, Lick, IPI, Variance
+# Added run time
 def medpc_extract(file):
     # file = home_dir + '/' + file
     with open(file) as f:
-        print(f)
         file_info = f.readlines()
-        medpc_data = dict.fromkeys(['Reward', 'Lever', 'Lick', 'IPI', 'Variance'])
+        medpc_data = dict.fromkeys(['Protocol', 'Run Time', 'Reward', 'Lever', 'Lick', 'IPI', 'Variance'])
         medpc_data['Protocol'] = file_info[12][5:-1]
         letters = ['F:','G:','U:','W:','X:','Y:','Z:']
         
+        # Find run time
+        start_time = datetime.datetime.strptime(file_info[10][-9:-1],'%H:%M:%S')
+        end_time = datetime.datetime.strptime(file_info[11][-9:-1],'%H:%M:%S')
+        medpc_data['Run Time'] = f'{end_time - start_time}'
         row_nums = []
         for letter in letters: #This IF statement catches the case when there is no data for a requested letter. Places a 0.
             row=[ind for ind, row in enumerate(file_info) if row == f'{letter}\n']
@@ -23,31 +26,39 @@ def medpc_extract(file):
             else:
                 row_nums += [0]
         boundaries = dict(zip(letters, row_nums))
-        medpc_data['Reward'] = np.asarray([float(item) for row in file_info[(boundaries['Z:']+1):]
-                                           for item in row[7:-1].split() ])
-        medpc_data['Lever'] = np.asarray([float(item) for row in file_info[(boundaries['X:']+1):boundaries['Y:']] for item in row[7:-1].split() ])
-        medpc_data['Lick'] = np.asarray([float(item) for row in file_info[(boundaries['Y:']+1):boundaries['Z:']] for item in row[7:-1].split() ])
+        try:
+            medpc_data['Reward'] = np.asarray([float(item) for row in file_info[(boundaries['Z:']+1):]
+                                       for item in row[7:-1].split() ])
+            medpc_data['Lever'] = np.asarray([float(item) for row in file_info[(boundaries['X:']+1):boundaries['Y:']] for item in row[7:-1].split() ])
+            medpc_data['Lick'] = np.asarray([float(item) for row in file_info[(boundaries['Y:']+1):boundaries['Z:']] for item in row[7:-1].split() ])
+        except: # Added these exceptions because 4241's file on 12/12 was giving me trouble
+            print(f'Error in file: {file}')
         if 'FR5' in medpc_data['Protocol']:
             if not boundaries['F:']==0: #this catches the one day recorded before I started saving the IPIs in F
-                medpc_data['IPI'] = np.asarray(
-                    [float(item) for row in file_info[(boundaries['F:'] + 1):boundaries['G:']] for item in row[7:-1].split()])
-                medpc_data['Variance'] = np.asarray(
-                    [float(item) for row in file_info[(boundaries['U:'] + 1):boundaries['W:']] for item in
-                     row[7:-1].split()])
+                try:
+                    medpc_data['IPI'] = np.asarray(
+                        [float(item) for row in file_info[(boundaries['F:'] + 1):boundaries['G:']] for item in row[7:-1].split()])
+                    medpc_data['Variance'] = np.asarray(
+                        [float(item) for row in file_info[(boundaries['U:'] + 1):boundaries['W:']] for item in
+                         row[7:-1].split()])
+                except:
+                    print(file)
+                    medpc_data['Reward'] == []
+                    medpc_data['Lever'] == []
+                    medpc_data['Lick'] == []
     return medpc_data
 
 
 
 def create_medpc_master(mice, dates):
-    columns = ['Mouse', 'Date', 'Protocol', 'Protocol Day', 'Run Time', 'Reward', 'Lever', 'Lick', 'IPI', 'Variance']
+    columns = ['Mouse', 'Date', 'Protocol', 'Run Time', 'Reward', 'Lever', 'Lick', 'IPI', 'Variance']
     total_mice = len(mice)
     days_training=len(dates)
-    mice_x_day = [y  for x in mice for y in [x]*days_training] #this only works when all mice contribute to all days
+    mice_x_day = [y for x in mice for y in [x]*days_training] #this only works when all mice contribute to all days
     medpc_master = pd.DataFrame(columns = columns)
     medpc_master['Mouse'] = mice_x_day
     medpc_master['Date'] = [y for x in range(total_mice) for y in dates]
-    file_dir = askdirectory(title='Select Folder: ',
-                            initialdir='C:/Users/...')
+    file_dir = "/Users/emma-fuze-grace/Lab/Behavior_VarSeq/Medpc Data"
     os.chdir((file_dir))
     print(f'Now in following directory: {file_dir}')
     for f in os.listdir():
@@ -55,7 +66,6 @@ def create_medpc_master(mice, dates):
         file_name, file_ext = os.path.splitext(f)
         file_date = file_name[:4]+file_name[5:7]+file_name[8:10]
         mouse_num = int(file_name[-4:])
-       # with open(f, 'r') as ff:
         medpc_data = medpc_extract(f)
         curr_mouse = medpc_master[medpc_master['Mouse']==mouse_num].index
         curr_date = medpc_master[medpc_master['Date']==file_date].index
@@ -67,11 +77,30 @@ def create_medpc_master(mice, dates):
             medpc_master.at[ind, 'Lick'] = medpc_data['Lick']
             medpc_master.at[ind, 'IPI'] = medpc_data['IPI']
             medpc_master.at[ind, 'Variance'] = medpc_data['Variance']
-
+            medpc_master.at[ind, 'Run Time'] = (medpc_data['Run Time'])
+    
+    # Add IPI/Var data for 4225 (First FR5 mouse)
+    mouse_4225_ind = medpc_master[medpc_master['Mouse']==4225].index
+    date_12_04_ind = medpc_master[medpc_master['Date']=='20211204'].index
+    new_ind = int(mouse_4225_ind.intersection(date_12_04_ind).values)
+    lever_4225 = medpc_master.at[new_ind, 'Lever']
+    reward_4225 = medpc_master.at[new_ind, 'Reward']
+    IPI_4225 = [lever_4225[i] - lever_4225[i-1] for i in range(1,len(lever_4225))]
+    Var_4225 = []
+    for i in range(len(reward_4225)):
+        curr_reward = reward_4225[i]
+        sequence = lever_4225[lever_4225 < curr_reward][-5:]
+        Var_4225.append(np.var(sequence))
+    medpc_master.at[new_ind, 'IPI'] = IPI_4225
+    medpc_master.at[new_ind, 'Variance'] = Var_4225
     return medpc_master
 
 mice=[4217,4218,4219,4220,4221,4222,4223,4224,4225,4226,4227,4228,
       4229,4230,4231,4232,4233,4234,4235,4236,4237,4238,4239,4240,4241,4242,4243, 4244] #(ints)
 dates=['20211202', '20211203', '20211204', '20211205', '20211206', '20211207', '20211208',
        '20211209', '20211210', '20211211', '20211212', '20211213', '20211214', '20211215'] #(strs)
-master_df = create_medpc_master(mice,dates)
+
+
+
+
+
