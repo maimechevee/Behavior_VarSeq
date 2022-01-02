@@ -24,37 +24,36 @@ master_df=master_df.drop(indices, axis=0)
 num_days_training = len(np.unique(master_df['Date']))
 mice = np.unique(master_df['Mouse'])  
 
-# Contains median session variance for each mouse/day combo   
-Variance_FR5 = [[] for i in range(num_days_training - 2)]
-Variance_FR5var = [[] for i in range(num_days_training - 2)]
+# Contains median session IPI for each mouse/day combo   
+IPI_FR5 = [[] for i in range(num_days_training - 2)]
+IPI_FR5var = [[] for i in range(num_days_training - 2)]
 
 fig,ax=plt.subplots(1,1)
 
 for i in range(len(mice)):
     curr_mouse = mice[i]
     curr_mouse_df = (master_df[master_df['Mouse']==curr_mouse]).reset_index()
-    exclude_FR1 = [curr_mouse_df['Variance'][ind] is not None for ind in range(len(curr_mouse_df))]
+    exclude_FR1 = [curr_mouse_df['IPI'][ind] is not None for ind in range(len(curr_mouse_df))]
     curr_mouse_df = (curr_mouse_df[exclude_FR1]).reset_index()
-    curr_mouse_variance = curr_mouse_df['Variance']
+    curr_mouse_IPI = curr_mouse_df['IPI']
     mouse_group = curr_mouse_df.iloc[-1]['Protocol'][41:] #Grab last day protocol to put mouse in group
     if 'va2' not in mouse_group:
-        plt.plot([np.median(day) for day in curr_mouse_variance], linewidth = 2, linestyle = '--', color = 'tomato')
+            plt.plot([np.mean(day) for day in curr_mouse_IPI], linewidth = 1, linestyle = '--', color = 'tomato')
     else:
-        plt.plot([np.median(day) for day in curr_mouse_variance], linewidth = 2, linestyle = '--', color = 'cornflowerblue')
-    for j in range(curr_mouse_variance.size):
-        curr_variance = curr_mouse_variance[j]
+        plt.plot([np.mean(day) for day in curr_mouse_IPI], linewidth = 1, linestyle = '--', color = 'cornflowerblue')
+    for j in range(curr_mouse_IPI.size):
+        curr_IPI = curr_mouse_IPI[j]
         # Can't find file for 4234 on the 13th -> so check if nan
-        if 'va2' not in mouse_group and not math.isnan(np.median(curr_variance)):
-            if curr_mouse != 4224:
-                Variance_FR5[j].append(np.median(curr_variance))
-        elif not math.isnan(np.median(curr_variance)):
-            Variance_FR5var[j].append(np.median(curr_variance))
+        if 'va2' not in mouse_group and not math.isnan(np.median(curr_IPI)):
+            IPI_FR5[j].append(np.median(curr_IPI))
+        elif not math.isnan(np.median(curr_IPI)):
+            IPI_FR5var[j].append(np.median(curr_IPI))
         
 
-plt.vlines(3.5,0,300, color='k', linestyle='dashed')
+plt.vlines(3.5,0,10, color='k', linestyle='dashed')
 plt.xlabel('Time from first FR5 session (day)', size=16)
 plt.xticks(fontsize=14)
-plt.ylabel('Individual session variance medians', size=16)
+plt.ylabel('Individual session IPI medians', size=16)
 plt.yticks(fontsize=14)
 plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='upper right')
 leg = ax.get_legend()
@@ -64,31 +63,31 @@ ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 
 # Take mean of median and median of median
-Variance_means_FR5 = [np.mean(day) for day in Variance_FR5 if day]
-Variance_means_FR5var = [np.mean(day) for day in Variance_FR5var if day]
-Variance_med_FR5 = [np.median(day) for day in Variance_FR5 if day]
-Variance_med_FR5var = [np.median(day) for day in Variance_FR5var if day]
-Variance_sem_FR5 = [(np.std(day))/np.sqrt(len(day)) for day in Variance_FR5 if day]
-Variance_sem_FR5var = [(np.std(day))/np.sqrt(len(day)) for day in Variance_FR5var if day]
+IPI_means_FR5 = [np.mean(day) for day in IPI_FR5 if day]
+IPI_means_FR5var = [np.mean(day) for day in IPI_FR5var]
+IPI_med_FR5 = [np.median(day) for day in IPI_FR5 if day]
+IPI_med_FR5var = [np.median(day) for day in IPI_FR5var]
+IPI_sem_FR5 = [(np.std(day))/np.sqrt(len(day)) for day in IPI_FR5 if day]
+IPI_sem_FR5var = [(np.std(day))/np.sqrt(len(day)) for day in IPI_FR5var if day]
 
 # Set up sem lists
-FR5_lower = [a-b for a,b in zip(Variance_means_FR5,Variance_sem_FR5)]
-FR5_upper = [a+b for a,b in zip(Variance_means_FR5,Variance_sem_FR5)]
-FR5var_lower = [a-b for a,b in zip(Variance_means_FR5var,Variance_sem_FR5var)]
-FR5var_upper = [a+b for a,b in zip(Variance_means_FR5var,Variance_sem_FR5var)]
+FR5_lower = [a-b for a,b in zip(IPI_means_FR5,IPI_sem_FR5)]
+FR5_upper = [a+b for a,b in zip(IPI_means_FR5,IPI_sem_FR5)]
+FR5var_lower = [a-b for a,b in zip(IPI_means_FR5var,IPI_sem_FR5var)]
+FR5var_upper = [a+b for a,b in zip(IPI_means_FR5var,IPI_sem_FR5var)]
 
 # Plot Mean of Medians
 
 fig,ax=plt.subplots(1,1)
-plt.plot(Variance_means_FR5, linewidth=2, color='tomato')
-plt.vlines(range(len(Variance_means_FR5var)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
-plt.plot(Variance_means_FR5var, linewidth=2, color='cornflowerblue')
-plt.vlines(range(len(Variance_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
+plt.plot(IPI_means_FR5, linewidth=2, color='tomato')
+plt.vlines(range(len(IPI_means_FR5var)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
+plt.plot(IPI_means_FR5var, linewidth=2, color='cornflowerblue')
+plt.vlines(range(len(IPI_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
 
-plt.vlines(3.5,0,50, color='k', linestyle='dashed')
+plt.vlines(3.5,0,5, color='k', linestyle='dashed')
 plt.xlabel('Time from first FR5 session (day)', size=16)
 plt.xticks(fontsize=14)
-plt.ylabel('Means of session variance means', size=16)
+plt.ylabel('Means of session IPI medians', size=16)
 plt.yticks(fontsize=14)
 plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='upper right')
 leg = ax.get_legend()
@@ -99,15 +98,15 @@ ax.spines['top'].set_visible(False)
 
 # Plot Median of Medians
 fig,ax=plt.subplots(1,1)
-plt.plot(Variance_med_FR5, linewidth=2, color='tomato')
-# plt.vlines(range(len(Variance_means_FR5)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
-plt.plot(Variance_med_FR5var, linewidth=2, color='cornflowerblue')
-# plt.vlines(range(len(Variance_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
+plt.plot(range(len(IPI_means_FR5)), IPI_med_FR5, linewidth=2, color='tomato')
+# plt.vlines(range(len(IPI_means_FR5)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
+plt.plot(IPI_med_FR5var, linewidth=2, color='cornflowerblue')
+# plt.vlines(range(len(IPI_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
 
-plt.vlines(3.5,0,30, color='k', linestyle='dashed')
+plt.vlines(3.5,0,5, color='k', linestyle='dashed')
 plt.xlabel('Time from first FR5 session (day)', size=16)
 plt.xticks(fontsize=14)
-plt.ylabel('Median of session variance medians', size=16)
+plt.ylabel('Median of session IPI medians', size=16)
 plt.yticks(fontsize=14)
 plt.legend(['FR5, N=10 mice', 'Var, N=8 mice'], loc='upper right')
 leg = ax.get_legend()

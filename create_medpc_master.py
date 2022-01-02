@@ -35,14 +35,14 @@ def medpc_extract(file):
             print(f'Error in file: {file}')
         if 'FR5' in medpc_data['Protocol']:
             if not boundaries['F:']==0: #this catches the one day recorded before I started saving the IPIs in F
-                try:
-                    medpc_data['IPI'] = np.asarray(
+                try: # Accidentally had variance/ipi switched - Variance is in F and IPI is in U
+                    medpc_data['Variance'] = np.asarray( 
                         [float(item) for row in file_info[(boundaries['F:'] + 1):boundaries['G:']] for item in row[7:-1].split()])
-                    medpc_data['Variance'] = np.asarray(
+                    medpc_data['IPI'] = np.asarray(
                         [float(item) for row in file_info[(boundaries['U:'] + 1):boundaries['W:']] for item in
                          row[7:-1].split()])
                 except:
-                    print(file)
+                    print(f'Error in file: {file}')
                     medpc_data['Reward'] == []
                     medpc_data['Lever'] == []
                     medpc_data['Lick'] == []
