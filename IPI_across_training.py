@@ -38,9 +38,9 @@ for i in range(len(mice)):
     curr_mouse_IPI = curr_mouse_df['IPI']
     mouse_group = curr_mouse_df.iloc[-1]['Protocol'][41:] #Grab last day protocol to put mouse in group
     if 'va2' not in mouse_group:
-            plt.plot([np.mean(day) for day in curr_mouse_IPI], linewidth = 1, linestyle = '--', color = 'tomato')
+            plt.plot([np.median(day) for day in curr_mouse_IPI], linewidth = 1, linestyle = '--', color = 'tomato')
     else:
-        plt.plot([np.mean(day) for day in curr_mouse_IPI], linewidth = 1, linestyle = '--', color = 'cornflowerblue')
+        plt.plot([np.median(day) for day in curr_mouse_IPI], linewidth = 1, linestyle = '--', color = 'cornflowerblue')
     for j in range(curr_mouse_IPI.size):
         curr_IPI = curr_mouse_IPI[j]
         # Can't find file for 4234 on the 13th -> so check if nan
@@ -64,9 +64,9 @@ ax.spines['top'].set_visible(False)
 
 # Take mean of median and median of median
 IPI_means_FR5 = [np.mean(day) for day in IPI_FR5 if day]
-IPI_means_FR5var = [np.mean(day) for day in IPI_FR5var]
+IPI_means_FR5var = [np.mean(day) for day in IPI_FR5var if day]
 IPI_med_FR5 = [np.median(day) for day in IPI_FR5 if day]
-IPI_med_FR5var = [np.median(day) for day in IPI_FR5var]
+IPI_med_FR5var = [np.median(day) for day in IPI_FR5var if day]
 IPI_sem_FR5 = [(np.std(day))/np.sqrt(len(day)) for day in IPI_FR5 if day]
 IPI_sem_FR5var = [(np.std(day))/np.sqrt(len(day)) for day in IPI_FR5var if day]
 
