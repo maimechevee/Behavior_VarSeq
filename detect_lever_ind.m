@@ -4,6 +4,11 @@
 delay = 15;
 magnet_matrix_4220 = readmatrix('HallSensor_20211215_4220.CSV');
 magnet_roll = roll_avg(magnet_matrix_4220(:,1),delay);
+
+To do
+Fix for diff boxes
+Adjust delay size
+fix duplicates
 %}
 
 function lever_ind = detect_lever_ind(magnet_matrix, magnet_roll, lever_data, delay)
@@ -23,16 +28,22 @@ time_temp = time_temp(abs(baseline-magnet_temp1)> 25);
 
 %Find beg and end indices
 
-magnet_slice = magnet_temp2(abs(baseline-magnet_temp2)< 100 & abs(baseline-magnet_temp2)> 70);
-time_slice = time_temp(abs(baseline-magnet_temp2)< 100 & abs(baseline-magnet_temp2)> 70);
+magnet_slice = magnet_temp2(abs(baseline-magnet_temp2)< 120 & abs(baseline-magnet_temp2)> 85);
+time_slice = time_temp(abs(baseline-magnet_temp2)< 120 & abs(baseline-magnet_temp2)> 85);
 
 prev_type = '';
 press_num = 1;
 lever_ind = [];
 
+
 figure(1)
 hold on
-
+% plot(time_data/1000,magnet_data,'LineWidth',1,'Color','#808080');
+plot(roll_time/1000,magnet_roll,'LineWidth',1,'Color','#808080');
+plot(roll_time(beg_ind)/1000,magnet_data(beg_ind),'Marker','o','Color','red','MarkerSize',10)
+plot(lever_data + (roll_time(beg_ind))/1000, magnet_off * ones(1, length(lever_data)), Marker = 'o')
+plot(time_temp/1000,magnet_temp2,'Linewidth',2,'Color','r')
+plot(time_slice/1000,magnet_slice,'Linewidth',3,'Color','b')
 % Main loop - go through slice and move down until baseline or until you
 % hit a valley (leads to excess presses, fixed in next loop)
 
@@ -42,7 +53,7 @@ for ii = 1:length(magnet_slice)-1
     roll_ind = length(roll_time(roll_time <= curr_time));
     if abs(magnet_roll(roll_ind+5) - baseline) > abs(magnet_roll(roll_ind) - baseline)
         curr_type = 'press';
-    elseif abs(magnet_roll(roll_ind+8) - baseline) < abs(magnet_roll(roll_ind) - baseline)
+    elseif abs(magnet_roll(roll_ind+5) - baseline) < abs(magnet_roll(roll_ind) - baseline)
         curr_type = 'release';
     end
     if ~strcmp(curr_type, prev_type) 
@@ -52,7 +63,7 @@ for ii = 1:length(magnet_slice)-1
                 abs(magnet_roll(search_ind-10) - baseline) < abs(magnet_roll(search_ind) - baseline)
                 search_ind = search_ind - 1;
             end
-            if abs(magnet_roll(search_ind-100) - baseline) < abs(magnet_roll(search_ind) - baseline)
+            if abs(magnet_roll(search_ind-75) - baseline) < abs(magnet_roll(search_ind) - baseline)
                 while abs(magnet_roll(search_ind)-baseline) > 5
                     search_ind = search_ind - 1;
                 end
@@ -63,7 +74,7 @@ for ii = 1:length(magnet_slice)-1
                     abs(magnet_roll(search_ind+10) - baseline) < abs(magnet_roll(search_ind) - baseline)
                 search_ind = search_ind + 1;
             end
-            if abs(magnet_roll(search_ind+100) - baseline) < abs(magnet_roll(search_ind) - baseline)
+            if abs(magnet_roll(search_ind+75) - baseline) < abs(magnet_roll(search_ind) - baseline)
                 while abs(magnet_roll(search_ind)-baseline) > 5
                     search_ind = search_ind + 1;
                 end
@@ -76,6 +87,7 @@ for ii = 1:length(magnet_slice)-1
 end
 
 %Cut out weird mini-bumps in presses
+% There will still be duplicates in "hilly" areas
 
 include_me = [];
 for jj = 1:length(lever_ind)
@@ -100,16 +112,6 @@ plot(roll_time(lever_ind(:,1))/1000,magnet_roll(lever_ind(:,1)),'MarkerSize',10,
     'Color','Red','LineStyle','none')
 plot(roll_time(lever_ind(:,2))/1000,magnet_roll(lever_ind(:,2)),'MarkerSize',10,'Marker','o',...
     'Color','Blue','LineStyle','none')
-% display(include_me)
-%Plot
-figure(1)
-hold on
-% plot(time_data/1000,magnet_data,'LineWidth',1,'Color','#808080');
-plot(roll_time/1000,magnet_roll,'LineWidth',1,'Color','#808080');
-plot(roll_time(beg_ind)/1000,magnet_data(beg_ind),'Marker','o','Color','red','MarkerSize',10)
-plot(lever_data + (roll_time(beg_ind))/1000, magnet_off * ones(1, length(lever_data)), Marker = 'o')
-plot(time_temp/1000,magnet_temp2,'Linewidth',2,'Color','r')
-plot(time_slice/1000,magnet_slice,'Linewidth',3,'Color','b')
 end
 
 
