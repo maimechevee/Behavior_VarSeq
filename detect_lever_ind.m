@@ -1,122 +1,162 @@
-% Return beg and end indices of each lever (for the roll_avg array)
+function lever_ind = detect_lever_ind(roll_matrix,threshold)
 
-%{
-delay = 15;
-magnet_matrix_4220 = readmatrix('HallSensor_20211215_4220.CSV');
-magnet_roll = roll_avg(magnet_matrix_4220(:,1),delay);
+% Initialization-----------------------------------------------------------
+magnet_roll = roll_matrix{1};
+time_roll = roll_matrix{2};
+delay = roll_matrix{3};
 
-To do
-Fix for diff boxes
-Adjust delay size
-fix duplicates
-%}
-
-function lever_ind = detect_lever_ind(magnet_matrix, magnet_roll, lever_data, delay)
-magnet_data = magnet_matrix(:,1);
-time_data = magnet_matrix(:,3);
-[beg_ind, baseline, magnet_off] =  detect_baseline(magnet_matrix, magnet_roll, lever_data, delay);
-roll_time = time_data((1+delay):(length(magnet_data)-delay));
-
-%Grab rough outline of the lever presses
-magnet_temp = magnet_roll(beg_ind:end); % cutoff beg. portion when magnet off
-magnet_temp1 = magnet_temp(abs(magnet_off-magnet_temp)> 50); %cutoff end portion
-magnet_temp2 = magnet_temp1(abs(baseline-magnet_temp1)> 25); %cutoff baseline
-
-time_temp = roll_time(beg_ind:end);
-time_temp = time_temp(abs(magnet_off-magnet_temp)> 50);
-time_temp = time_temp(abs(baseline-magnet_temp1)> 25);
-
-%Find beg and end indices
-
-magnet_slice = magnet_temp2(abs(baseline-magnet_temp2)< 120 & abs(baseline-magnet_temp2)> 85);
-time_slice = time_temp(abs(baseline-magnet_temp2)< 120 & abs(baseline-magnet_temp2)> 85);
-
-prev_type = '';
-press_num = 1;
-lever_ind = [];
-
-
-figure(1)
+% figure(1)
 hold on
-% plot(time_data/1000,magnet_data,'LineWidth',1,'Color','#808080');
-plot(roll_time/1000,magnet_roll,'LineWidth',1,'Color','#808080');
-plot(roll_time(beg_ind)/1000,magnet_data(beg_ind),'Marker','o','Color','red','MarkerSize',10)
-plot(lever_data + (roll_time(beg_ind))/1000, magnet_off * ones(1, length(lever_data)), Marker = 'o')
-plot(time_temp/1000,magnet_temp2,'Linewidth',2,'Color','r')
-plot(time_slice/1000,magnet_slice,'Linewidth',3,'Color','b')
-% Main loop - go through slice and move down until baseline or until you
-% hit a valley (leads to excess presses, fixed in next loop)
+xlabel('Time (s)')
 
-for ii = 1:length(magnet_slice)-1
-    curr_time = time_slice(ii);
-    curr_pt = magnet_slice(ii);
-    roll_ind = length(roll_time(roll_time <= curr_time));
-    if abs(magnet_roll(roll_ind+5) - baseline) > abs(magnet_roll(roll_ind) - baseline)
-        curr_type = 'press';
-    elseif abs(magnet_roll(roll_ind+5) - baseline) < abs(magnet_roll(roll_ind) - baseline)
-        curr_type = 'release';
+magnet_off = median(magnet_roll(time_roll < time_roll(1) + 1000));
+on = abs(magnet_roll - magnet_off) > 230;
+magnet_on = magnet_roll(on);
+time_on = time_roll(on);
+orig_baseline = median(magnet_on(1:1000));
+start_ind = length(time_roll(time_roll <= time_on(1)));
+
+% plot([time_roll(start_ind)/1000, time_roll(start_ind + 1000)/1000],...
+%     [orig_baseline, orig_baseline],'Color','k','LineWidth',4)
+% plot(time_roll/1000,magnet_roll,'Color','#dfe2e4')
+% plot(time_roll(on)/1000,magnet_on,'Color','b')
+
+
+% Calculate Baselines------------------------------------------------------
+
+% Flag places to potentially calculate baseline
+temp = magnet_off + 245;
+% plot([time_roll(1)/1000,time_roll(end)/1000],[temp, temp])
+baseline_flags = [];
+
+for ii = 2:length(time_roll(time_roll <= time_on(end)))-1
+    cond_1 = magnet_roll(ii + 1) < temp && magnet_roll(ii) > temp;
+    cond_2 = magnet_roll(ii - 1) < temp && magnet_roll(ii) > temp;
+    if cond_1
+        baseline_flags = [baseline_flags ii];
+%         plot(time_roll(ii)/1000,magnet_roll(ii),'MarkerSize',10,'Marker','o','Color','r')
+    elseif cond_2
+        baseline_flags = [baseline_flags ii];
+%         plot(time_roll(ii)/1000,magnet_roll(ii),'MarkerSize',10,'Marker','o','Color','g')
     end
-    if ~strcmp(curr_type, prev_type) 
-        search_ind = roll_ind;
-        if strcmp(curr_type, 'press')
-            while abs(magnet_roll(search_ind)-baseline) > 5 &&...
-                abs(magnet_roll(search_ind-10) - baseline) < abs(magnet_roll(search_ind) - baseline)
-                search_ind = search_ind - 1;
-            end
-            if abs(magnet_roll(search_ind-75) - baseline) < abs(magnet_roll(search_ind) - baseline)
-                while abs(magnet_roll(search_ind)-baseline) > 5
-                    search_ind = search_ind - 1;
-                end
-            end
-            lever_ind(press_num, 1) = search_ind;
-        elseif strcmp(curr_type, 'release')
-            while abs(magnet_roll(search_ind)-baseline) > 5 &&...
-                    abs(magnet_roll(search_ind+10) - baseline) < abs(magnet_roll(search_ind) - baseline)
-                search_ind = search_ind + 1;
-            end
-            if abs(magnet_roll(search_ind+75) - baseline) < abs(magnet_roll(search_ind) - baseline)
-                while abs(magnet_roll(search_ind)-baseline) > 5
-                    search_ind = search_ind + 1;
-                end
-            end
-            lever_ind(press_num, 2) = search_ind;
-            press_num = press_num + 1;
+end
+
+% Actual calculation
+baselines = [];
+baseline_ind = [];
+row = 0;
+baseline_flags = baseline_flags(1:length(baseline_flags)-mod(length(baseline_flags),2));
+for ii = 1:length(baseline_flags)
+    if mod(ii,2) == 1
+        baseline_start = baseline_flags(ii);
+        if baseline_flags(ii+1) - baseline_flags(ii) > 5000
+            baseline_end = baseline_start + 1000;
+            row = row + 1;
+        elseif baseline_flags(ii+1) - baseline_flags(ii) > 1000
+            baseline_end = baseline_flags(ii + 1);
+            row = row + 1;
+        end   
+    else
+        if baseline_flags(ii) - baseline_flags(ii-1) > 5000
+            baseline_start = baseline_flags(ii) - 1000;
+            baseline_end = baseline_flags(ii);
+            row = row + 1;
         end
     end
-    prev_type = curr_type;
-end
-
-%Cut out weird mini-bumps in presses
-% There will still be duplicates in "hilly" areas
-
-include_me = [];
-for jj = 1:length(lever_ind)
-    start_ind = lever_ind(jj,1);
-    end_ind = lever_ind(jj,2);
-    if end_ind == 0
-        break;
-    end
-    % Condition 1 and 2 check that there is a substantial hill (or valley)
-    % between the start/end
-    condition_1 = abs(max(abs(magnet_roll(start_ind:end_ind) - baseline)) - abs(magnet_roll(start_ind))) > 75;
-    condition_2 = abs(max(abs(magnet_roll(start_ind:end_ind) - baseline)) - abs(magnet_roll(end_ind))) > 75;
-    condition_3 = end_ind ~= 0;
-    if (condition_1 || condition_2) && condition_3
-        include_me = [include_me jj];
+    if mod(ii,2) == 1 && baseline_flags(ii+1) - baseline_flags(ii) < 1000
+%         plot([time_roll(baseline_flags(ii-1))/1000, time_roll(baseline_flags(ii + 1))/1000], ...
+%          [baselines(row), baselines(row)], 'LineWidth',1,'Color','r', ...
+%          'LineStyle','--')
+    elseif mod(ii,2) == 1 || (mod(ii,2) == 0 && baseline_flags(ii) - baseline_flags(ii-1) > 5000)
+        baseline_chunk = magnet_roll(baseline_start:baseline_end);
+        baseline_ind(row,1) = baseline_start;
+        baselines = [baselines; median(baseline_chunk)];
+%         plot([time_roll(baseline_start)/1000, time_roll(baseline_end)/1000], ...
+%         [median(baseline_chunk), median(baseline_chunk)], 'LineWidth',2,'Color','r')
     end
 end
 
-lever_ind = lever_ind(include_me, :);
-lever_ind = lever_ind(1:end-1,:);
-plot(roll_time(lever_ind(:,1))/1000,magnet_roll(lever_ind(:,1)),'MarkerSize',10,'Marker','*',...
-    'Color','Red','LineStyle','none')
-plot(roll_time(lever_ind(:,2))/1000,magnet_roll(lever_ind(:,2)),'MarkerSize',10,'Marker','o',...
-    'Color','Blue','LineStyle','none')
+% plot(time_roll(baseline_ind)/1000, 760 * ones(1,length(baselines)), '->', ...
+%     'LineWidth',3)
+
+
+% Normalization------------------------------------------------------------
+% figure(2)
+hold on
+xlabel('Time (s)')
+title('Normalized Data')
+
+normalized = zeros(1,length(magnet_roll));
+
+for ii = 1:length(baseline_ind)-1
+    mask = baseline_ind(ii):baseline_ind(ii+1);
+    curr_chunk = magnet_roll(mask)/baselines(ii);
+    normalized(mask) = curr_chunk;
 end
 
+
+normalized(1:baseline_ind(1)) = magnet_roll(1:baseline_ind(1))/baselines(1);
+normalized(baseline_ind(end):end) = magnet_roll(baseline_ind(end,1):end)/baselines(end);
+
+% plot(time_roll/1000,normalized,'Color','#dfe2e4')
+% plot([time_roll(1)/1000,time_roll(end)/1000],[1, 1],'r')
+% plot([time_roll(1)/1000,time_roll(end)/1000],[0.9, 0.9],'r')
+
+% Find indices
+% plot([time_roll(1)/1000,time_roll(end)/1000],[threshold, threshold])
+press_num = 1;
+lever_ind = [];
+%  mean(normalized((search_ind + 1):search_ind + 5)) > normalized(search_ind)
+% mean(normalized(search_ind -5:search_ind-1)) > normalized(search_ind)
+for ii = (baseline_flags(1) + 1):length(time_roll(time_roll <= time_on(end)))
+    cond_1 = normalized(ii + 1) < threshold && normalized(ii) > threshold;
+    cond_2 = normalized(ii - 1) < threshold && normalized(ii) > threshold;
+    if cond_1
+        searching = true;
+        search_ind = ii;
+        while searching
+            if normalized(search_ind - 1) > normalized(search_ind)
+                search_ind = search_ind - 1;
+            elseif sum(normalized(search_ind - 50:search_ind-1) > normalized(search_ind))
+                search_ind = search_ind - 1;
+            else
+                searching = false;
+            end
+            if normalized(search_ind-1) > 1
+                searching = false;
+            end
+        end
+        lever_ind(press_num, 1) = search_ind;
+        % plot(time_roll(search_ind)/1000,normalized(search_ind),'MarkerSize',10,'Marker','o','Color','g')
+    elseif cond_2
+        searching = true;
+        search_ind = ii;
+        while searching
+            if normalized(search_ind + 1) > normalized(search_ind)
+                search_ind = search_ind + 1;
+            elseif sum(normalized((search_ind+1):search_ind + 50) > normalized(search_ind))
+                search_ind = search_ind + 1;
+            else
+                searching = false;
+            end
+            if normalized(search_ind+1) > 1
+                searching = false;
+            end
+        end
+        lever_ind(press_num, 2) = search_ind;
+        press_num = press_num + 1;
+        %plot(time_roll(search_ind)/1000,normalized(search_ind),'MarkerSize',10,'Marker','*','Color','r')
+    end
+end
+end
+% plot(time_roll(unique(baselines))/1000,ones(1,length(unique(baseline_ind))),...
+%     'Marker','*', 'MarkerSize',10)
 
 %{
-643081      643121
-      643081      643126
-      643081      643141
+Useful plots
+Threshold:
+plot([time_roll(1)/1000,time_roll(end)/1000],[threshold, threshold])
+
+Start of magnet on:
+plot(time_roll(start_ind)/1000,magnet_roll(start_ind),'MarkerSize',10,'Marker','*')
 %}
