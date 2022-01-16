@@ -1,13 +1,9 @@
-function lever_ind = detect_lever_ind(roll_matrix,threshold)
+function lever_ind = detect_lever_ind(roll_matrix,threshold,want_plot,lever_data)
 
 % Initialization-----------------------------------------------------------
 magnet_roll = roll_matrix{1};
 time_roll = roll_matrix{2};
 delay = roll_matrix{3};
-
-% figure(1)
-hold on
-xlabel('Time (s)')
 
 magnet_off = median(magnet_roll(time_roll < time_roll(1) + 1000));
 on = abs(magnet_roll - magnet_off) > 230;
@@ -16,10 +12,15 @@ time_on = time_roll(on);
 orig_baseline = median(magnet_on(1:1000));
 start_ind = length(time_roll(time_roll <= time_on(1)));
 
-% plot([time_roll(start_ind)/1000, time_roll(start_ind + 1000)/1000],...
-%     [orig_baseline, orig_baseline],'Color','k','LineWidth',4)
-% plot(time_roll/1000,magnet_roll,'Color','#dfe2e4')
-% plot(time_roll(on)/1000,magnet_on,'Color','b')
+if want_plot
+    figure(1)
+    hold on
+    xlabel('Time (s)')
+    plot([time_roll(start_ind)/1000, time_roll(start_ind + 1000)/1000],...
+        [orig_baseline, orig_baseline],'Color','k','LineWidth',4)
+    plot(time_roll/1000,magnet_roll,'Color','#dfe2e4')
+    plot(time_roll(on)/1000,magnet_on,'Color','b')
+end
 
 
 % Calculate Baselines------------------------------------------------------
@@ -34,10 +35,14 @@ for ii = 2:length(time_roll(time_roll <= time_on(end)))-1
     cond_2 = magnet_roll(ii - 1) < temp && magnet_roll(ii) > temp;
     if cond_1
         baseline_flags = [baseline_flags ii];
-%         plot(time_roll(ii)/1000,magnet_roll(ii),'MarkerSize',10,'Marker','o','Color','r')
+        if want_plot
+            plot(time_roll(ii)/1000,magnet_roll(ii),'MarkerSize',10,'Marker','o','Color','r')
+        end
     elseif cond_2
         baseline_flags = [baseline_flags ii];
-%         plot(time_roll(ii)/1000,magnet_roll(ii),'MarkerSize',10,'Marker','o','Color','g')
+        if want_plot
+            plot(time_roll(ii)/1000,magnet_roll(ii),'MarkerSize',10,'Marker','o','Color','g')
+        end
     end
 end
 
@@ -64,24 +69,29 @@ for ii = 1:length(baseline_flags)
         end
     end
     if mod(ii,2) == 1 && baseline_flags(ii+1) - baseline_flags(ii) < 1000
-%         plot([time_roll(baseline_flags(ii-1))/1000, time_roll(baseline_flags(ii + 1))/1000], ...
-%          [baselines(row), baselines(row)], 'LineWidth',1,'Color','r', ...
-%          'LineStyle','--')
+        if want_plot
+            plot([time_roll(baseline_flags(ii-1))/1000, time_roll(baseline_flags(ii + 1))/1000], ...
+             [baselines(row), baselines(row)], 'LineWidth',1,'Color','r', ...
+             'LineStyle','--')
+        end
     elseif mod(ii,2) == 1 || (mod(ii,2) == 0 && baseline_flags(ii) - baseline_flags(ii-1) > 5000)
         baseline_chunk = magnet_roll(baseline_start:baseline_end);
         baseline_ind(row,1) = baseline_start;
         baselines = [baselines; median(baseline_chunk)];
-%         plot([time_roll(baseline_start)/1000, time_roll(baseline_end)/1000], ...
-%         [median(baseline_chunk), median(baseline_chunk)], 'LineWidth',2,'Color','r')
+        if want_plot
+            plot([time_roll(baseline_start)/1000, time_roll(baseline_end)/1000], ...
+            [median(baseline_chunk), median(baseline_chunk)], 'LineWidth',2,'Color','r')
+        end
     end
 end
 
-% plot(time_roll(baseline_ind)/1000, 760 * ones(1,length(baselines)), '->', ...
-%     'LineWidth',3)
-
+if want_plot
+    plot(time_roll(baseline_ind)/1000, 760 * ones(1,length(baselines)), '->', ...
+        'LineWidth',3)
+end
 
 % Normalization------------------------------------------------------------
-% figure(2)
+figure(2)
 hold on
 xlabel('Time (s)')
 title('Normalized Data')
@@ -98,16 +108,25 @@ end
 normalized(1:baseline_ind(1)) = magnet_roll(1:baseline_ind(1))/baselines(1);
 normalized(baseline_ind(end):end) = magnet_roll(baseline_ind(end,1):end)/baselines(end);
 
-% plot(time_roll/1000,normalized,'Color','#dfe2e4')
-% plot([time_roll(1)/1000,time_roll(end)/1000],[1, 1],'r')
-% plot([time_roll(1)/1000,time_roll(end)/1000],[0.9, 0.9],'r')
+if want_plot
+    plot(time_roll/1000,normalized,'Color','#dfe2e4')
+    plot([time_roll(1)/1000,time_roll(end)/1000],[1, 1],'r')
+end
 
 % Find indices
-% plot([time_roll(1)/1000,time_roll(end)/1000],[threshold, threshold])
+if want_plot
+    plot([time_roll(1)/1000,time_roll(end)/1000],[threshold, threshold])
+    plot([time_roll(1)/1000,time_roll(end)/1000],[.73, .73])
+    for ii = 1:length(lever_data)
+        my_marker = sprintf('%d',ii-1); %First press is 0
+        text(lever_data(ii)+time_on(1)/1000, 0.73, my_marker)
+    end
+end
+
+% plot(lever_data+time_on(1)/1000,0.73*ones(1,length(lever_data)),'--*','MarkerSize',5)
 press_num = 1;
 lever_ind = [];
-%  mean(normalized((search_ind + 1):search_ind + 5)) > normalized(search_ind)
-% mean(normalized(search_ind -5:search_ind-1)) > normalized(search_ind)
+
 for ii = (baseline_flags(1) + 1):length(time_roll(time_roll <= time_on(end)))
     cond_1 = normalized(ii + 1) < threshold && normalized(ii) > threshold;
     cond_2 = normalized(ii - 1) < threshold && normalized(ii) > threshold;
@@ -127,7 +146,13 @@ for ii = (baseline_flags(1) + 1):length(time_roll(time_roll <= time_on(end)))
             end
         end
         lever_ind(press_num, 1) = search_ind;
-        % plot(time_roll(search_ind)/1000,normalized(search_ind),'MarkerSize',10,'Marker','o','Color','g')
+        if want_plot
+            r = rand()/250; % In case they are on the same point
+            my_marker_1 = sprintf('%d',press_num);
+            plot(time_roll(search_ind)/1000,normalized(search_ind),'MarkerSize',10,'Marker','o','Color','g')
+            text(time_roll(search_ind)/1000,normalized(search_ind)+0.0175+r, my_marker_1,...
+                'HorizontalAlignment','center')
+        end
     elseif cond_2
         searching = true;
         search_ind = ii;
@@ -144,19 +169,15 @@ for ii = (baseline_flags(1) + 1):length(time_roll(time_roll <= time_on(end)))
             end
         end
         lever_ind(press_num, 2) = search_ind;
+        if want_plot
+            my_marker_2 = sprintf('%d u',press_num);
+            plot(time_roll(search_ind)/1000,normalized(search_ind),'MarkerSize',10,'Marker','*','Color','r')
+%             text(time_roll(search_ind)/1000,normalized(search_ind)+0.01, my_marker_2,...
+%                 'HorizontalAlignment','center')
+        end
         press_num = press_num + 1;
-        %plot(time_roll(search_ind)/1000,normalized(search_ind),'MarkerSize',10,'Marker','*','Color','r')
     end
 end
 end
-% plot(time_roll(unique(baselines))/1000,ones(1,length(unique(baseline_ind))),...
-%     'Marker','*', 'MarkerSize',10)
 
-%{
-Useful plots
-Threshold:
-plot([time_roll(1)/1000,time_roll(end)/1000],[threshold, threshold])
 
-Start of magnet on:
-plot(time_roll(start_ind)/1000,magnet_roll(start_ind),'MarkerSize',10,'Marker','*')
-%}
