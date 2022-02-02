@@ -3,14 +3,17 @@ import scipy.stats as stats
 import numpy as np
 import math
 import matplotlib
+from create_medpc_master import *
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
 mice=[4217,4218,4219,4220,4221,4222,4223,4224,4225,4226,4227,4228,
       4229,4230,4231,4232,4233,4234,4235,4236,4237,4238,4239,4240,4241,4242,4243, 4244] 
 
+master_df = create_medpc_master(mice,dates)
+
 #Make reward vs days plot
-All_rewards=np.zeros((len(np.unique(master_df['Mouse'])), len(np.unique(mouse_df['Date']))))
+All_rewards=np.zeros((len(np.unique(master_df['Mouse'])), len(np.unique(master_df['Date']))))
 All_protocols=[]
 for j,mouse in enumerate(np.unique(master_df['Mouse'])):
     mouse_protocols=[]
@@ -18,10 +21,13 @@ for j,mouse in enumerate(np.unique(master_df['Mouse'])):
     mouse_rewards=np.zeros((1,len(np.unique(mouse_df['Date']))))[0]
     for i,date in enumerate(np.unique(mouse_df['Date'])):
         date_df=mouse_df[mouse_df['Date']==date]
-        if math.isnan(sum(sum(date_df['Reward'].values))):
-            mouse_rewards[i]=0
-        else:
-            mouse_rewards[i]=len(date_df['Reward'].values[0])
+        try:
+            if math.isnan(sum(sum(date_df['Reward'].values))):
+                mouse_rewards[i] = 0
+            else:
+                mouse_rewards[i] = len(date_df['Reward'].values[0])
+        except:
+            print('Error in reward column:' + f'{mouse}' + date)
         mouse_protocols.append(date_df['Protocol'].values)
     print(mouse)
     print(mouse_rewards)
@@ -48,7 +54,10 @@ fig,ax=plt.subplots(1,1)
 total_discarded=0
 discard_list=[]
 for mouse,mouse_data, mouse_protocols in zip(mice,All_rewards, All_protocols):
-    mask=[i for i,x in enumerate(mouse_protocols) if 'FR5' in x[0]]
+    try:
+        mask=[i for i,x in enumerate(mouse_protocols) if 'FR5' in x[0]]
+    except:
+        print('Mask problem: ' + f'{mouse}')
     cum_data=Cumulative(mouse_data[mask])
     if cum_data[-1]<330:
         print(str(mouse)+str(cum_data[-1]))
@@ -58,7 +67,9 @@ for mouse,mouse_data, mouse_protocols in zip(mice,All_rewards, All_protocols):
         color='r'
     else:
         color='k'
-    plt.plot(cum_data, color=color, linestyle='dotted')   
+    plt.plot(cum_data, color=color, linestyle='dotted')
+print('Discard List: ')
+print(discard_list)
 plt.xlabel('Time from first FR5 session (day)', size=16)
 plt.xticks(fontsize=14)
 plt.ylabel('Cumulstive rewards obtained (#)', size=16)
@@ -401,3 +412,4 @@ leg.legendHandles[0].set_color('tomato')
 leg.legendHandles[1].set_color('cornflowerblue')
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
+plt.show()

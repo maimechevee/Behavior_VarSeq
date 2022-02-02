@@ -24,13 +24,5 @@ end
 
 % Grab baseline of first second of when magnet turns off 
 baseline = mean(magnet_roll(beg_ind:beg_ind + 1000));
-% 
-% %Plot
-% figure(1)
-% hold on
-% plot(time_data/1000,magnet_data,'LineWidth',1,'Color','#808080');
-% plot(roll_time/1000,roll_avg,'LineWidth',3,'Color','r');
-% plot(roll_time(beg_ind)/1000,magnet_data(beg_ind),'Marker','o','Color','red','MarkerSize',10)
-% plot(lever_data + (roll_time(beg_ind))/1000, magnet_off * ones(1, length(lever_data)), Marker = 'o')
 
 end

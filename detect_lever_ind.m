@@ -1,4 +1,4 @@
-function lever_ind = detect_lever_ind(roll_matrix,threshold,want_plot,lever_data)
+function data = detect_lever_ind(roll_matrix,threshold,want_plot,lever_data)
 
 % Initialization-----------------------------------------------------------
 magnet_roll = roll_matrix{1};
@@ -26,8 +26,8 @@ end
 % Calculate Baselines------------------------------------------------------
 
 % Flag places to potentially calculate baseline
-temp = magnet_off + 245;
-% plot([time_roll(1)/1000,time_roll(end)/1000],[temp, temp])
+temp = magnet_off + 240;
+plot([time_roll(1)/1000,time_roll(end)/1000],[temp, temp])
 baseline_flags = [];
 
 for ii = 2:length(time_roll(time_roll <= time_on(end)))-1
@@ -178,6 +178,10 @@ for ii = (baseline_flags(1) + 1):length(time_roll(time_roll <= time_on(end)))
         press_num = press_num + 1;
     end
 end
+
+data = {};
+data{1} = lever_ind;
+data{2} = normalized;
 end
 
 

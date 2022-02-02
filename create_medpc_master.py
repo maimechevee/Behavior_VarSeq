@@ -58,49 +58,51 @@ def create_medpc_master(mice, dates):
     medpc_master = pd.DataFrame(columns = columns)
     medpc_master['Mouse'] = mice_x_day
     medpc_master['Date'] = [y for x in range(total_mice) for y in dates]
-    file_dir = "/Users/emma-fuze-grace/Lab/Behavior_VarSeq/Medpc Data"
+    file_dir = "/Users/emma-fuze-grace/Lab/Behavior_VarSeq/Medpc Data/CATEG"
     os.chdir((file_dir))
     print(f'Now in following directory: {file_dir}')
     for f in os.listdir():
         # 2021-12-02_12h13m_Subject 4217.txt (Original name format)
         file_name, file_ext = os.path.splitext(f)
-        file_date = file_name[:4]+file_name[5:7]+file_name[8:10]
-        mouse_num = int(file_name[-4:])
-        medpc_data = medpc_extract(f)
-        curr_mouse = medpc_master[medpc_master['Mouse']==mouse_num].index
-        curr_date = medpc_master[medpc_master['Date']==file_date].index
-        ind = int(curr_mouse.intersection(curr_date).values)
-        if not math.isnan(ind):
-            medpc_master.at[ind, 'Protocol'] = medpc_data['Protocol']
-            medpc_master.at[ind, 'Reward'] = medpc_data['Reward']
-            medpc_master.at[ind, 'Lever'] = medpc_data['Lever']
-            medpc_master.at[ind, 'Lick'] = medpc_data['Lick']
-            medpc_master.at[ind, 'IPI'] = medpc_data['IPI']
-            medpc_master.at[ind, 'Variance'] = medpc_data['Variance']
-            medpc_master.at[ind, 'Run Time'] = (medpc_data['Run Time'])
-    
-    # Add IPI/Var data for 4225 (First FR5 mouse)
-    mouse_4225_ind = medpc_master[medpc_master['Mouse']==4225].index
-    date_12_04_ind = medpc_master[medpc_master['Date']=='20211204'].index
-    new_ind = int(mouse_4225_ind.intersection(date_12_04_ind).values)
-    lever_4225 = medpc_master.at[new_ind, 'Lever']
-    reward_4225 = medpc_master.at[new_ind, 'Reward']
-    IPI_4225 = [lever_4225[i] - lever_4225[i-1] for i in range(1,len(lever_4225))]
-    Var_4225 = []
-    for i in range(len(reward_4225)):
-        curr_reward = reward_4225[i]
-        sequence = lever_4225[lever_4225 < curr_reward][-5:]
-        Var_4225.append(np.var(sequence))
-    medpc_master.at[new_ind, 'IPI'] = IPI_4225
-    medpc_master.at[new_ind, 'Variance'] = Var_4225
+        if file_name[0] != '.':
+            file_date = file_name[:4]+file_name[5:7]+file_name[8:10]
+            mouse_num = int(file_name[-4:])
+            medpc_data = medpc_extract(f)
+            curr_mouse = medpc_master[medpc_master['Mouse']==mouse_num].index
+            curr_date = medpc_master[medpc_master['Date']==file_date].index
+            try:
+                ind = int(curr_mouse.intersection(curr_date).values)
+                if not math.isnan(ind):
+                    medpc_master.at[ind, 'Protocol'] = medpc_data['Protocol']
+                    medpc_master.at[ind, 'Reward'] = medpc_data['Reward']
+                    medpc_master.at[ind, 'Lever'] = medpc_data['Lever']
+                    medpc_master.at[ind, 'Lick'] = medpc_data['Lick']
+                    medpc_master.at[ind, 'IPI'] = medpc_data['IPI']
+                    medpc_master.at[ind, 'Variance'] = medpc_data['Variance']
+                    medpc_master.at[ind, 'Run Time'] = (medpc_data['Run Time'])
+            except:
+                print(curr_mouse)
+                print(curr_date)
+            
     return medpc_master
-
-mice=[4217,4218,4219,4220,4221,4222,4223,4224,4225,4226,4227,4228,
-      4229,4230,4231,4232,4233,4234,4235,4236,4237,4238,4239,4240,4241,4242,4243, 4244] #(ints)
-dates=['20211202', '20211203', '20211204', '20211205', '20211206', '20211207', '20211208',
-       '20211209', '20211210', '20211211', '20211212', '20211213', '20211214', '20211215'] #(strs)
-
-
+            
+        
+    
+    # # Add IPI/Var data for 4225 (First FR5 mouse)
+    # mouse_4225_ind = medpc_master[medpc_master['Mouse']==4225].index
+    # date_12_04_ind = medpc_master[medpc_master['Date']=='20211204'].index
+    # new_ind = int(mouse_4225_ind.intersection(date_12_04_ind).values)
+    # lever_4225 = medpc_master.at[new_ind, 'Lever']
+    # reward_4225 = medpc_master.at[new_ind, 'Reward']
+    # IPI_4225 = [lever_4225[i] - lever_4225[i-1] for i in range(1,len(lever_4225))]
+    # Var_4225 = []
+    # for i in range(len(reward_4225)):
+    #     curr_reward = reward_4225[i]
+    #     sequence = lever_4225[lever_4225 < curr_reward][-5:]
+    #     Var_4225.append(np.var(sequence))
+    # medpc_master.at[new_ind, 'IPI'] = IPI_4225
+    # medpc_master.at[new_ind, 'Variance'] = Var_4225
+    # return medpc_master
 
 
 

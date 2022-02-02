@@ -1,5 +1,5 @@
 function lever_data = extract_lever_data(filename)
-
+    
     fid = fopen(filename, 'rt');
     
     if fid < 0

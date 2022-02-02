@@ -45,8 +45,7 @@ for i in range(len(mice)):
         curr_variance = curr_mouse_variance[j]
         # Can't find file for 4234 on the 13th -> so check if nan
         if 'va2' not in mouse_group and not math.isnan(np.median(curr_variance)):
-            if curr_mouse != 4224:
-                Variance_FR5[j].append(np.median(curr_variance))
+            Variance_FR5[j].append(np.median(curr_variance))
         elif not math.isnan(np.median(curr_variance)):
             Variance_FR5var[j].append(np.median(curr_variance))
         
@@ -81,9 +80,9 @@ FR5var_upper = [a+b for a,b in zip(Variance_means_FR5var,Variance_sem_FR5var)]
 
 fig,ax=plt.subplots(1,1)
 plt.plot(Variance_means_FR5, linewidth=2, color='tomato')
-plt.vlines(range(len(Variance_means_FR5var)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
+# plt.vlines(range(len(Variance_means_FR5var)), FR5_lower, FR5_upper, linewidths=2, colors='tomato') 
 plt.plot(Variance_means_FR5var, linewidth=2, color='cornflowerblue')
-plt.vlines(range(len(Variance_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
+# plt.vlines(range(len(Variance_means_FR5var)), FR5var_lower, FR5var_upper, linewidths=2, colors='cornflowerblue') 
 
 plt.vlines(3.5,0,50, color='k', linestyle='dashed')
 plt.xlabel('Time from first FR5 session (day)', size=16)
