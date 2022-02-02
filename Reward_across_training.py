@@ -25,7 +25,6 @@ for j,mouse in enumerate(np.unique(master_df['Mouse'])):
     mouse_rewards=np.zeros((1,len(np.unique(mouse_df['Date']))))[0]
     for i,date in enumerate(np.unique(mouse_df['Date'])):
         date_df=mouse_df[mouse_df['Date']==date]
-<<<<<<< Updated upstream
         try:
             if math.isnan(sum(sum(date_df['Reward'].values))):
                 mouse_rewards[i] = 0
@@ -33,7 +32,6 @@ for j,mouse in enumerate(np.unique(master_df['Mouse'])):
                 mouse_rewards[i] = len(date_df['Reward'].values[0])
         except:
             print('Error in reward column:' + f'{mouse}' + date)
-=======
         if mouse==4241 and date=='20220130':
             continue
         try :
@@ -44,7 +42,6 @@ for j,mouse in enumerate(np.unique(master_df['Mouse'])):
             print(mouse)
             print(date)
             
->>>>>>> Stashed changes
         mouse_protocols.append(date_df['Protocol'].values)
     print(mouse)
     print(mouse_rewards)

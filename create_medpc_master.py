@@ -58,16 +58,13 @@ def create_medpc_master(mice, dates, file_dir):
     medpc_master = pd.DataFrame(columns = columns)
     medpc_master['Mouse'] = mice_x_day
     medpc_master['Date'] = [y for x in range(total_mice) for y in dates]
-<<<<<<< Updated upstream
-    file_dir = "/Users/emma-fuze-grace/Lab/Behavior_VarSeq/Medpc Data/CATEG"
-=======
->>>>>>> Stashed changes
+
     os.chdir((file_dir))
     print(f'Now in following directory: {file_dir}')
     for f in os.listdir():
         # 2021-12-02_12h13m_Subject 4217.txt (Original name format)
         file_name, file_ext = os.path.splitext(f)
-<<<<<<< Updated upstream
+
         if file_name[0] != '.':
             file_date = file_name[:4]+file_name[5:7]+file_name[8:10]
             mouse_num = int(file_name[-4:])
@@ -88,7 +85,6 @@ def create_medpc_master(mice, dates, file_dir):
                 print(curr_mouse)
                 print(curr_date)
             
-=======
         file_date = file_name[:4]+file_name[5:7]+file_name[8:10]
         mouse_num = int(file_name[-4:])
         medpc_data = medpc_extract(f)
@@ -120,7 +116,7 @@ def create_medpc_master(mice, dates, file_dir):
         Var_4225.append(np.var(sequence))
     medpc_master.at[new_ind, 'IPI'] = IPI_4225
     medpc_master.at[new_ind, 'Variance'] = Var_4225
->>>>>>> Stashed changes
+
     return medpc_master
             
         
