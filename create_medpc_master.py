@@ -50,92 +50,49 @@ def medpc_extract(file):
 
 
 
-def create_medpc_master(mice, dates, file_dir):
+def create_medpc_master(mice,  file_dir):
     columns = ['Mouse', 'Date', 'Protocol', 'Run Time', 'Reward', 'Lever', 'Lick', 'IPI', 'Variance']
-    total_mice = len(mice)
-    days_training=len(dates)
-    mice_x_day = [y for x in mice for y in [x]*days_training] #this only works when all mice contribute to all days
-    medpc_master = pd.DataFrame(columns = columns)
-    medpc_master['Mouse'] = mice_x_day
-    medpc_master['Date'] = [y for x in range(total_mice) for y in dates]
+    medpc_master = pd.DataFrame(columns=columns)
+    for mouse in mice: #loop through each mouse
+        fnall = [dayfile for dayfile in os.listdir(file_dir) if str(mouse) in dayfile] # find all the files that have the mouse's name in them
+        for day in fnall: #loop trhough each day from the mouse
+            fullfile=os.path.join(file_dir, day) #get full path to file
+            day_df=pd.DataFrame(columns=columns)
+            day_df.at[0,'Mouse'] = mouse
+            day_df.at[0,'Date'] = day[:4]+day[5:7]+day[8:10]
+            medpc_data = medpc_extract(fullfile) #call base function to extract data from txt file  
+            day_df.at[0, 'Protocol'] = medpc_data['Protocol']
+            day_df.at[0, 'Reward'] = medpc_data['Reward']
+            day_df.at[0, 'Lever'] = medpc_data['Lever']
+            day_df.at[0, 'Lick'] = medpc_data['Lick']
+            day_df.at[0, 'IPI'] = medpc_data['IPI']
+            day_df.at[0, 'Variance'] = medpc_data['Variance']
+            day_df.at[0, 'Run Time'] = (medpc_data['Run Time'])
+            medpc_master=pd.concat([medpc_master,day_df],ignore_index=True)        
+        
 
-    os.chdir((file_dir))
-    print(f'Now in following directory: {file_dir}')
-    for f in os.listdir():
-        # 2021-12-02_12h13m_Subject 4217.txt (Original name format)
-        file_name, file_ext = os.path.splitext(f)
-
-        if file_name[0] != '.':
-            file_date = file_name[:4]+file_name[5:7]+file_name[8:10]
-            mouse_num = int(file_name[-4:])
-            medpc_data = medpc_extract(f)
-            curr_mouse = medpc_master[medpc_master['Mouse']==mouse_num].index
-            curr_date = medpc_master[medpc_master['Date']==file_date].index
-            try:
-                ind = int(curr_mouse.intersection(curr_date).values)
-                if not math.isnan(ind):
-                    medpc_master.at[ind, 'Protocol'] = medpc_data['Protocol']
-                    medpc_master.at[ind, 'Reward'] = medpc_data['Reward']
-                    medpc_master.at[ind, 'Lever'] = medpc_data['Lever']
-                    medpc_master.at[ind, 'Lick'] = medpc_data['Lick']
-                    medpc_master.at[ind, 'IPI'] = medpc_data['IPI']
-                    medpc_master.at[ind, 'Variance'] = medpc_data['Variance']
-                    medpc_master.at[ind, 'Run Time'] = (medpc_data['Run Time'])
-            except:
-                print(curr_mouse)
-                print(curr_date)
-            
-        file_date = file_name[:4]+file_name[5:7]+file_name[8:10]
-        mouse_num = int(file_name[-4:])
-        medpc_data = medpc_extract(f)
-        curr_mouse = medpc_master[medpc_master['Mouse']==mouse_num].index
-        curr_date = medpc_master[medpc_master['Date']==file_date].index
-        ind = int(curr_mouse.intersection(curr_date).values)
-        if not math.isnan(ind):
-            medpc_master.at[ind, 'Protocol'] = medpc_data['Protocol']
-            medpc_master.at[ind, 'Reward'] = medpc_data['Reward']
-            medpc_master.at[ind, 'Lever'] = medpc_data['Lever']
-            medpc_master.at[ind, 'Lick'] = medpc_data['Lick']
-            medpc_master.at[ind, 'IPI'] = medpc_data['IPI']
-            medpc_master.at[ind, 'Variance'] = medpc_data['Variance']
-            medpc_master.at[ind, 'Run Time'] = (medpc_data['Run Time'])
-    
-    
-    # Add IPI/Var data for 4225 (First FR5 mouse). This mouse was recorded before we started directly storing IPI 
-    #as a variable. The block below fills in the missing info for this mouse.
-    mouse_4225_ind = medpc_master[medpc_master['Mouse']==4225].index
-    date_12_04_ind = medpc_master[medpc_master['Date']=='20211204'].index
-    new_ind = int(mouse_4225_ind.intersection(date_12_04_ind).values)
-    lever_4225 = medpc_master.at[new_ind, 'Lever']
-    reward_4225 = medpc_master.at[new_ind, 'Reward']
-    IPI_4225 = [lever_4225[i] - lever_4225[i-1] for i in range(1,len(lever_4225))]
-    Var_4225 = []
-    for i in range(len(reward_4225)):
-        curr_reward = reward_4225[i]
-        sequence = lever_4225[lever_4225 < curr_reward][-5:]
-        Var_4225.append(np.var(sequence))
-    medpc_master.at[new_ind, 'IPI'] = IPI_4225
-    medpc_master.at[new_ind, 'Variance'] = Var_4225
+   
+    if 4225 in mice: 
+        # Add IPI/Var data for 4225 (First FR5 mouse). This mouse was recorded before we started directly storing IPI 
+        #as a variable. The block below fills in the missing info for this mouse.
+        mouse_df = medpc_master[medpc_master['Mouse']==4225]
+        
+        if '20211204' not in np.unique(mouse_df['Date']): #if this day is not included in data set of interest
+            return medpc_master
+        date_df = mouse_df[mouse_df['Date']=='20211204']
+        new_ind = date_df.index.values[0]
+        lever_4225 = medpc_master.at[new_ind, 'Lever']
+        reward_4225 = medpc_master.at[new_ind, 'Reward']
+        IPI_4225 = [lever_4225[i] - lever_4225[i-1] for i in range(1,len(lever_4225))]
+        Var_4225 = []
+        for i in range(len(reward_4225)):
+            curr_reward = reward_4225[i]
+            sequence = lever_4225[lever_4225 < curr_reward][-5:]
+            Var_4225.append(np.var(sequence))
+        medpc_master.at[new_ind, 'IPI'] = IPI_4225
+        medpc_master.at[new_ind, 'Variance'] = Var_4225
 
     return medpc_master
             
         
     
-    # # Add IPI/Var data for 4225 (First FR5 mouse)
-    # mouse_4225_ind = medpc_master[medpc_master['Mouse']==4225].index
-    # date_12_04_ind = medpc_master[medpc_master['Date']=='20211204'].index
-    # new_ind = int(mouse_4225_ind.intersection(date_12_04_ind).values)
-    # lever_4225 = medpc_master.at[new_ind, 'Lever']
-    # reward_4225 = medpc_master.at[new_ind, 'Reward']
-    # IPI_4225 = [lever_4225[i] - lever_4225[i-1] for i in range(1,len(lever_4225))]
-    # Var_4225 = []
-    # for i in range(len(reward_4225)):
-    #     curr_reward = reward_4225[i]
-    #     sequence = lever_4225[lever_4225 < curr_reward][-5:]
-    #     Var_4225.append(np.var(sequence))
-    # medpc_master.at[new_ind, 'IPI'] = IPI_4225
-    # medpc_master.at[new_ind, 'Variance'] = Var_4225
-    # return medpc_master
-
-
-
