@@ -5,6 +5,8 @@ Created on Mon Jan 31 15:16:35 2022
 
 @author: emma-fuze-grace
 """
+sys.path.append('C:/Users/cheveemf/Documents/GitHub\Maxime_Tools')
+sys.path.append('C:/Users/cheveemf/Documents/GitHub\Behavior_VarSeq')
 
 import matplotlib.pyplot as plt
 import matplotlib
@@ -68,9 +70,120 @@ for i,mouse in enumerate(mice):
     All_Variance[i,:]=Mean_variance_across_days
     plt.scatter(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c=protocol_colors, alpha=0.5)
 plt.yscale('log')  
- 
+
 plt.plot(np.nanmean(All_Variance, axis=0), linewidth=2, color='k')
 plt.yscale('log')  
+
+###############################################################################
+# Same as above but split in two plots
+###############################################################################
+fig,ax=plt.subplots(1,1,figsize=(10,5))
+plt.sca(ax)
+All_Variance=np.empty((len(mice), 15))
+for i,mouse in enumerate(mice):
+    mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    Variance=mouse_df['Variance'].values
+    protocol_specific_variance=[v for v,x in zip(Variance,mouse_df['Protocol'].values) if 'CATEG' not in x]
+    Mean_variance_across_days=[np.median(x) for x in protocol_specific_variance]
+    while len(Mean_variance_across_days)<15:
+        Mean_variance_across_days.append(float('nan'))
+    All_Variance[i,:]=Mean_variance_across_days
+    #plt.scatter(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='cornflowerblue',alpha=0.5)
+    plt.plot(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='cornflowerblue',alpha=0.3)
+plt.yscale('log')  
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False) 
+plt.xticks([0,4,9,14],['1','5','10','15'],  size=16)
+plt.xlabel('Time on FR5 schedule (days)', size=20)
+plt.ylabel('Median within sequence \n inter-press interval', size=20)
+plt.title(str(len(mice)) + ' mice')
+
+
+mean=np.nanmean(All_Variance, axis=0)
+std=np.nanstd(All_Variance, axis=0)/np.sqrt([np.sum([not math.isnan(x) for x in All_Variance[:,i]]) for i in range(np.shape(All_Variance)[1])] )
+plt.plot(mean, linewidth=3, color='cornflowerblue')
+plt.vlines(range(np.shape(All_Variance)[1]), mean-std, mean+std, color='cornflowerblue', linewidth=3)
+plt.ylim(0,10000)
+plt.yscale('log')  
+
+fig,ax=plt.subplots(1,1,figsize=(10,5))
+plt.sca(ax)
+All_Variance=np.empty((len(mice), 10))
+for i,mouse in enumerate(mice):
+    mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    Variance=mouse_df['Variance'].values
+    protocol_specific_variance=[v for v,x in zip(Variance,mouse_df['Protocol'].values) if 'CATEG'  in x]
+    Mean_variance_across_days=[np.median(x) for x in protocol_specific_variance]
+    while len(Mean_variance_across_days)<10:
+        Mean_variance_across_days.append(float('nan'))
+    All_Variance[i,:]=Mean_variance_across_days
+    #plt.scatter(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='cornflowerblue',alpha=0.5)
+    plt.plot(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='tomato',alpha=0.3)
+plt.yscale('log')  
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False) 
+plt.xticks([0,4,9,14],['1','5','10','15'],  size=16)
+plt.xlabel('Time on variance-targetted FR5 schedule (days)', size=20)
+plt.ylabel('Median within sequence \n inter-press interval', size=20)
+plt.title(str(len(mice)) + ' mice')
+
+
+mean=np.nanmean(All_Variance, axis=0)
+std=np.nanstd(All_Variance, axis=0)/np.sqrt([np.sum([not math.isnan(x) for x in All_Variance[:,i]]) for i in range(np.shape(All_Variance)[1])] )
+plt.plot(mean, linewidth=3, color='tomato')
+plt.vlines(range(np.shape(All_Variance)[1]), mean-std, mean+std, color='tomato', linewidth=3)
+plt.ylim(0,10000)
+plt.yscale('log')  
+
+###############################################################################
+# example plots for single sessions
+###############################################################################
+mouse=4224
+mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
+mouse_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
+date='20220131'
+#for date in np.unique(mouse_df['Date']):
+plt.figure()
+date_df = mouse_df[mouse_df['Date']==date].reset_index()
+
+Variance=date_df['Variance'].values[0]
+plt.plot(Variance)
+plt.yscale('log')
+
+Target=[np.median(Variance[i-5:i]) for i in np.arange(5,len(Variance))]
+while len(Target)<len(Variance):
+    Target.insert(0,float('nan'))
+plt.plot(Target)
+
+Rewarded_trials_index= np.where(Variance<Target)[0]
+Rewarded_trials_index=[x for x in Rewarded_trials_index]
+while Rewarded_trials_index[0]!=0:
+    Rewarded_trials_index.insert(0,Rewarded_trials_index[0]-1)
+plt.vlines(Rewarded_trials_index, np.zeros_like(Rewarded_trials_index), Variance[Rewarded_trials_index], linestyles='dotted')
+
+#get the LP times for an example reward
+trial=np.where([x==80 for x in Rewarded_trials_index])[0][0]
+plt.figure()
+reward_time=date_df['Reward'].values[0][trial]
+LP_times=date_df['Lever'].values[0]
+temp=np.where(LP_times<=reward_time)[0]
+plt.vlines(LP_times[temp[-5:]], 0,1)
+variance_IPI=np.var(np.diff(LP_times[temp[-5:]]))
+plt.xlim(2550, 2557)
+print(variance_IPI)
+print(Variance[Rewarded_trials_index[trial]])
+
+#22 is unrewarded, before 23 which is.
+trial=np.where([x==33 for x in Rewarded_trials_index])[0][0]
+plt.figure()
+reward_time=date_df['Reward'].values[0][trial]
+LP_times=date_df['Lever'].values[0]
+temp=np.where(LP_times<=reward_time)[0]
+plt.vlines(LP_times[temp[-10:-5]], 0,1)
+plt.xlim(608,615)
+
 
 ###############################################################################
 # mousewise heatmaps variance starting with first FR5/Va5 and into CATEG
