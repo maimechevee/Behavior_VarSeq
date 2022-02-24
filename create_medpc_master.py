@@ -66,50 +66,53 @@ def create_session_dictionary(file):
 
         """ Populate dictionary using extract_event function and row nums."""
         medpc_data['Reward'] = extract_event(file_info, boundaries['Z:'], 0)
-        medpc_data['Lever'] = extract_event(file_info, 
-                                            boundaries['Y:'], 
+        medpc_data['Lever'] = extract_event(file_info,
+                                            boundaries['Y:'],
                                             boundaries['Z:'])
-        medpc_data['Lick'] = extract_event(file_info, 
-                                           boundaries['X:'], 
+        medpc_data['Lick'] = extract_event(file_info,
+                                           boundaries['X:'],
                                            boundaries['Y:'])
-        medpc_data['IPI'] = extract_event(file_info, 
-                                            boundaries['U:'], 
-                                            boundaries['W:'])
-        
-        if 'FR5' in medpc_data['Protocol']:
-            """The below if statement catches the day before Variance and IPI 
-            were recorded in directly for the first FR5 mouse (4225).
-            """
-            if boundaries['F:']: 
-                medpc_data['Variance'] = extract_event(file_info, 
-                                                    boundaries['F:'], 
-                                                    boundaries['G:'])
-        else:
-            """Using "N/A" for when we expect to not have timestamps for a n event
-            will make it more obvious that there is a mistake if for some reason
-            None is placed here.
+        medpc_data['IPI'] = extract_event(file_info,
+                                          boundaries['U:'],
+                                          boundaries['W:'])
+
+        p = medpc_data['Protocol'].lower()
+        if 'fr1' in p or 'noforcedr' in p or 'nolight' in p:
+            """Using "N/A" for when we expect to not have timestamps for an
+            event will make it more obvious that if there is a mistake, since
+            None is automatically placed as the value when dict is initialized
+            using only keys.
             """
             medpc_data['Variance'] = 'N/A'
-            
-        for key in medpc_data:
-            assert type(medpc_data[key]) is not type(None)
-            # Trying to adapt to make more flexible for different protocols, 
-            # not finished yet  but am working on it.
+        elif 'fr5' in p and boundaries['F:']:
+            medpc_data['Variance'] = extract_event(file_info,
+                                                   boundaries['F:'],
+                                                   boundaries['G:'])
+
+        if file == '2021-12-04_12h12m_Subject 4225.txt':
+            return fill_missing_info(medpc_data, 4225, '20211204')
+
+        for key, value in medpc_data.items():
+            if isinstance(value, type(None)):
+                print(f'File "{file}" has None for {key}.')
     return medpc_data
 
 
-
 def create_medpc_master(mice,  file_dir):
-    columns = ['Mouse', 'Date', 'Protocol', 'Run Time', 'Reward', 'Lever', 'Lick', 'IPI', 'Variance']
+    columns = ['Mouse', 'Date', 'Protocol', 'Run Time', 'Reward', 'Lever',
+               'Lick', 'IPI', 'Variance']
     medpc_master = pd.DataFrame(columns=columns)
-    for mouse in mice: #loop through each mouse
-        fnall = [dayfile for dayfile in os.listdir(file_dir) if str(mouse) in dayfile] # find all the files that have the mouse's name in them
-        for day in fnall: #loop trhough each day from the mouse
-            fullfile=os.path.join(file_dir, day) #get full path to file
-            day_df=pd.DataFrame(columns=columns)
-            day_df.at[0,'Mouse'] = mouse
-            day_df.at[0,'Date'] = day[:4]+day[5:7]+day[8:10]
-            medpc_data = create_session_dictionary(fullfile) #call base function to extract data from txt file  
+    for mouse in mice:  # loop through each mouse
+        # find all the files that have the mouse's name in them
+        fnall = [dayfile for dayfile in os.listdir(file_dir)
+                 if str(mouse) in dayfile]
+        for day in fnall:  # loop through each day from the mouse
+            fullfile = os.path.join(file_dir, day)  # get full path to file
+            day_df = pd.DataFrame(columns=columns)
+            day_df.at[0, 'Mouse'] = mouse
+            day_df.at[0, 'Date'] = day[:4]+day[5:7]+day[8:10]
+            # call base function to extract data from txt file
+            medpc_data = create_session_dictionary(fullfile)
             day_df.at[0, 'Protocol'] = medpc_data['Protocol']
             day_df.at[0, 'Reward'] = medpc_data['Reward']
             day_df.at[0, 'Lever'] = medpc_data['Lever']
@@ -117,48 +120,40 @@ def create_medpc_master(mice,  file_dir):
             day_df.at[0, 'IPI'] = medpc_data['IPI']
             day_df.at[0, 'Variance'] = medpc_data['Variance']
             day_df.at[0, 'Run Time'] = (medpc_data['Run Time'])
-            medpc_master = pd.concat([medpc_master, day_df], ignore_index=True)    
-        
-
-   
-    if 4225 in mice: 
-        # Add IPI/Var data for 4225 (First FR5 mouse). This mouse was recorded before we started directly storing IPI 
-        #as a variable. The block below fills in the missing info for this mouse.
-        mouse_df = medpc_master[medpc_master['Mouse']==4225]
-        
-        if '20211204' not in np.unique(mouse_df['Date']): #if this day is not included in data set of interest
-            return medpc_master
-        date_df = mouse_df[mouse_df['Date']=='20211204']
-        new_ind = date_df.index.values[0]
-        lever_4225 = medpc_master.at[new_ind, 'Lever']
-        reward_4225 = medpc_master.at[new_ind, 'Reward']
-        IPI_4225 = [lever_4225[i] - lever_4225[i-1] for i in range(1,len(lever_4225))]
-        Var_4225 = []
-        for i in range(len(reward_4225)):
-            curr_reward = reward_4225[i]
-            sequence = lever_4225[lever_4225 < curr_reward][-5:]
-            Var_4225.append(np.var(sequence))
-        medpc_master.at[new_ind, 'IPI'] = IPI_4225
-        medpc_master.at[new_ind, 'Variance'] = Var_4225
-
+            medpc_master = pd.concat([medpc_master, day_df], ignore_index=True)
     assert medpc_master.empty is False, 'Empty dataframe.'
     return medpc_master
 
+
+def fill_missing_info(medpc_data, mouse, date):
+    """ Add IPI/Var data for 4225 (First FR5 mouse). This mouse was recorded
+    before we started directly storing IPI as a variable. This function
+    fills in the missing info for this mouse.
+    """
+    lever = medpc_data['lever']
+    rewards = medpc_data['reward']
+    medpc_data['IPI'] = [lever[i] - lever[i-1] for i in range(1, len(lever))]
+    medpc_data['Variance'] = [np.var(lever[lever < reward][-5:])
+                              for reward in rewards]
+    return medpc_data
+
+
 def discard_mice(master_df, discard_list):
     """Drop poorly performing mice from dataframe.
-    
+
     For original TarVar in December:
-        discard_list = [4217, 4218, 4221, 4227, 4232, 
+        discard_list = [4217, 4218, 4221, 4227, 4232,
                         4235, 4236, 4237, 4238, 4244]
-    """     
+    """
     indices = []
     for mouse in discard_list:
-        indices.append(master_df[master_df['Mouse']==mouse].index)
+        indices.append(master_df[master_df['Mouse'] == mouse].index)
     indices = [x for l in indices for x in l]
     return master_df.drop(indices, axis=0)
 
+
 if __name__ == '__main__':
     mice = [i for i in range(4386, 4414)]
-    file_dir = ('/Users/emma-fuze-grace/Lab/Behavior_VarSeq'
+    file_dir = ('/Users/emma-fuze-grace/Lab'
                 '/2022-02_TarVar_Categ_01/2022-02_TarVar_Categ_01_data')
     master_df = create_medpc_master(mice, file_dir)
