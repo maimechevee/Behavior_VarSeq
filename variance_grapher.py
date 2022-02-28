@@ -140,49 +140,103 @@ plt.yscale('log')
 ###############################################################################
 # example plots for single sessions
 ###############################################################################
-mouse=4224
-mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
-mouse_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
-date='20220131'
+
 #for date in np.unique(mouse_df['Date']):
-plt.figure()
-date_df = mouse_df[mouse_df['Date']==date].reset_index()
+# for mouse in mice:
+#     mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
+#     mouse_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarget_FR5va2']#'MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
+#     if len(mouse_df)==0:
+#         continue
+#     dates=mouse_df['Date'].values[[0,-1]]
+#     for date in dates:
+        mouse=4219
+        mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
+        mouse_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarget_FR5va2']#'MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
+    
+        date='20211208'
+        fig,ax=plt.subplots(1,1,figsize=(12,4))
+        date_df = mouse_df[mouse_df['Date']==date].reset_index()
+        
+        Variance=date_df['Variance'].values[0]
+        plt.plot(Variance, color='cornflowerblue')
+        plt.yscale('log')
 
-Variance=date_df['Variance'].values[0]
-plt.plot(Variance)
-plt.yscale('log')
 
-Target=[np.median(Variance[i-5:i]) for i in np.arange(5,len(Variance))]
-while len(Target)<len(Variance):
-    Target.insert(0,float('nan'))
-plt.plot(Target)
-
-Rewarded_trials_index= np.where(Variance<Target)[0]
-Rewarded_trials_index=[x for x in Rewarded_trials_index]
-while Rewarded_trials_index[0]!=0:
-    Rewarded_trials_index.insert(0,Rewarded_trials_index[0]-1)
-plt.vlines(Rewarded_trials_index, np.zeros_like(Rewarded_trials_index), Variance[Rewarded_trials_index], linestyles='dotted')
+        plt.vlines(range(len(Variance)), np.zeros_like(Variance), Variance, linestyles='dotted', color='teal')
+        plt.hlines(0.01,0,len(Variance), color='k')
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False) 
+        plt.xlabel('Trials', size=20)
+        plt.ylim(0.0000001, 20000)
+        plt.ylabel('Median within sequence \n inter-press interval', size=20)
+        plt.title('FR5 ' +str(mouse) + '_' + date)
 
 #get the LP times for an example reward
-trial=np.where([x==80 for x in Rewarded_trials_index])[0][0]
-plt.figure()
+trial=19
+fig,ax=plt.subplots()
 reward_time=date_df['Reward'].values[0][trial]
 LP_times=date_df['Lever'].values[0]
 temp=np.where(LP_times<=reward_time)[0]
 plt.vlines(LP_times[temp[-5:]], 0,1)
-variance_IPI=np.var(np.diff(LP_times[temp[-5:]]))
-plt.xlim(2550, 2557)
-print(variance_IPI)
-print(Variance[Rewarded_trials_index[trial]])
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False) 
+ax.spines['left'].set_visible(False) 
+plt.xlabel('Seconds', size=16)
+plt.yticks([])
+    
+
+# for mouse in mice:
+#     mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
+#     mouse_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
+#     if len(mouse_df)==0:
+#         continue
+#     dates=mouse_df['Date'].values[[0,-1]]
+#     for date in dates:
+        mouse=4219
+        mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
+        mouse_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
+    
+        date='20220201'
+        fig,ax=plt.subplots(1,1,figsize=(12,4))
+        date_df = mouse_df[mouse_df['Date']==date].reset_index()
+        
+        Variance=date_df['Variance'].values[0]
+        plt.plot(Variance, color='cornflowerblue')
+        plt.yscale('log')
+        
+        Target=[np.median(Variance[i-5:i]) for i in np.arange(5,len(Variance))]
+        while len(Target)<len(Variance):
+            Target.insert(0,float('nan'))
+        plt.plot(Target, color='tomato')
+        
+        Rewarded_trials_index= np.where(Variance<Target)[0]
+        Rewarded_trials_index=[x for x in Rewarded_trials_index]
+        while Rewarded_trials_index[0]!=0:
+            Rewarded_trials_index.insert(0,Rewarded_trials_index[0]-1)
+        plt.vlines(Rewarded_trials_index, np.zeros_like(Rewarded_trials_index), Variance[Rewarded_trials_index], linestyles='dotted', color='teal')
+        plt.hlines(0.01,0,len(Variance), color='k')
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False) 
+        plt.xlabel('Trial', size=20)
+        plt.ylim(0.0000001, 20000)
+        plt.ylabel('Median within sequence \n inter-press interval', size=20)
+        plt.title('CATEG ' +str(mouse) + '_' + date)
+
+
+
 
 #22 is unrewarded, before 23 which is.
-trial=np.where([x==33 for x in Rewarded_trials_index])[0][0]
-plt.figure()
+trial=50
+fig,ax=plt.subplots(1,1)
 reward_time=date_df['Reward'].values[0][trial]
 LP_times=date_df['Lever'].values[0]
 temp=np.where(LP_times<=reward_time)[0]
-plt.vlines(LP_times[temp[-10:-5]], 0,1)
-plt.xlim(608,615)
+plt.vlines(LP_times[temp[-5:]], 0,1)
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False) 
+ax.spines['left'].set_visible(False) 
+plt.xlabel('Seconds', size=16)
+plt.yticks([])
 
 
 ###############################################################################
