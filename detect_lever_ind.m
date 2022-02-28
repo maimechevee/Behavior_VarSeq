@@ -1,9 +1,9 @@
-function data = detect_lever_ind(roll_matrix,threshold,want_plot,lever_data)
+function data = detect_lever_ind(magnet_data, threshold, want_plot,lever_data)
 
 % Initialization-----------------------------------------------------------
-magnet_roll = roll_matrix{1};
-time_roll = roll_matrix{2};
-delay = roll_matrix{3};
+magnet_roll = magnet_data{1};
+time_roll = magnet_data{2};
+delay = magnet_data{3};
 
 magnet_off = median(magnet_roll(time_roll < time_roll(1) + 1000));
 on = abs(magnet_roll - magnet_off) > 230;
