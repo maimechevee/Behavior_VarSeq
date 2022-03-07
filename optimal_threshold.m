@@ -1,7 +1,8 @@
-function optimal_threshold(roll_matrix,lever_data)
-magnet_roll = roll_matrix{1};
-time_roll = roll_matrix{2};
-delay = roll_matrix{3};
+function optimal_threshold(magnet_data,lever_data)
+
+magnet_roll = magnet_data{1};
+time_roll = magnet_data{2};
+delay = magnet_data{3};
 magnet_off = median(magnet_roll(time_roll < time_roll(1) + 1000));
 on = abs(magnet_roll - magnet_off) > 230;
 magnet_on = magnet_roll(on);
@@ -15,7 +16,7 @@ thresholds = min_threshold:increment:max_threshold;
 result = zeros(1,num_trials+1);
 for ii = 1:num_trials+1
     threshold = thresholds(ii);
-    num_presses = length(detect_lever_ind(roll_matrix, threshold,0,lever_data));
+    num_presses = length(detect_lever_ind(magnet_data, threshold,0,lever_data));
     result(ii) = num_presses;
 end
 

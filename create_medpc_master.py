@@ -154,6 +154,5 @@ def discard_mice(master_df, discard_list):
 
 if __name__ == '__main__':
     mice = [i for i in range(4386, 4414)]
-    file_dir = ('/Users/emma-fuze-grace/Lab'
-                '/2022-02_TarVar_Categ_01/2022-02_TarVar_Categ_01_data')
+    file_dir = input('File directory: ')
     master_df = create_medpc_master(mice, file_dir)

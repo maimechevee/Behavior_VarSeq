@@ -6,21 +6,10 @@ from create_medpc_master import create_medpc_master
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
 
-mice=[4217,4218,4219,4220,4221,4222,4223,4224,4225,4226,4227,4228,
-      4229,4230,4231,4232,4233,4234,4235,4236,4237,4238,4239,4240,4241,4242,4243, 4244] #(ints)
-dates=['20211202', '20211203', '20211204', '20211205', '20211206', '20211207', '20211208',
-       '20211209', '20211210', '20211211', '20211212', '20211213', '20211214', '20211215'] #(strs)
-master_df = create_medpc_master(mice,dates)
-
-# Had a problem with extracting data from '2021-12-12_16h47m_Subject 4241.txt'
-
-# Taken from Reward_across_training
-discard_list = [4217, 4218, 4221, 4227, 4232, 4235, 4236, 4237, 4238, 4244]     
-indices=[]
-for mouse in discard_list:
-    indices.append(master_df[master_df['Mouse']==mouse].index)
-indices=[x for l in indices for x in l]
-master_df=master_df.drop(indices, axis=0)
+mice = [i for i in range(4386, 4414)]
+file_dir = ('/Users/emma-fuze-grace/Lab/Behavior_VarSeq'
+            '/2022-02_TarVar_Categ_01/2022-02_TarVar_Categ_01_data')
+master_df = create_medpc_master(mice, file_dir)
 num_days_training = len(np.unique(master_df['Date']))
 mice = np.unique(master_df['Mouse'])  
 
