@@ -1,0 +1,84 @@
+4217	TarVar1: FR5Var, discard
+4218	TarVar1: FR5, discard
+4219	TarVar1: FR5Var, TarVar2: CATEG 
+4220	TarVar1: FR5Var 
+4221	TarVar1: FR5, discard 
+4222	TarVar1: FR5, TarVar2: CATEG  
+4223	TarVar1: FR5Var 
+4224	TarVar1: FR5, TarVar2: CATEG 
+4225	TarVar1: FR5, TarVar2: CATEG 
+4226	TarVar1: FR5, TarVar2: CATEG 
+4227	TarVar1: FR5Var, discard 
+4228	TarVar1: FR5Var 
+4229	TarVar1: FR5, TarVar2: CATEG 
+4230	TarVar1: FR5, TarVar2: CATEG 
+4231	TarVar1: FR5Var, TarVar2: CATEG 
+4232	TarVar1: FR5, discard
+4233	TarVar1: FR5 
+4234	TarVar1: FR5Var, TarVar2: CATEG  
+4235	TarVar1: FR5Var, discard 
+4236	TarVar1: FR5Var, discard 
+4237	TarVar1: FR5, discard 
+4238	TarVar1: FR5Var, discard 
+4239	TarVar1: FR5Var, TarVar2: CATEG 
+4240	TarVar1: FR5, TarVar2: CATEG 
+4241	TarVar1: FR5Var, TarVar2: CATEG 
+4242	TarVar1: FR5 
+4243	TarVar1: FR5 
+4244	TarVar1: FR5, discard 
+4386	TarVar3: NoLight 
+4387	TarVar3: NoLight 
+4388	TarVar3: NoReward 
+4389	TarVar3: NoReward 
+4390	TarVar3: Nothing 
+4391	TarVar3: Nothing 
+4392	TarVar3: CATEG 
+4393	TarVar3: CATEG 
+4394	TarVar3: CATEG 
+4395	TarVar3: CATEG 
+4396	TarVar3: NoLight 
+4397	TarVar3: NoLight 
+4398	TarVar3: NoReward 
+4399	TarVar3: NoReward 
+4400	TarVar3: Nothing 
+4401	TarVar3: CATEG 
+4402	TarVar3: CATEG 
+4403	TarVar3: CATEG 
+4404	TarVar3: CATEG 
+4405	TarVar3: CATEG 
+4406	TarVar3: Nothing 
+4407	TarVar3: CATEG 
+4408	TarVar3: CATEG 
+4409	TarVar3: CATEG 
+4410	TarVar3: CATEG 
+4411	TarVar3: CATEG 
+4412	TarVar3: CATEG 
+4413	TarVar3: CATEG 
+4467	TarVar4: NoLight 
+4468	TarVar4: NoLight 
+4469	TarVar4: NoReward 
+4470	TarVar4: NoReward 
+4471	TarVar4: Nothing 
+4472	TarVar4: Nothing 
+4473	TarVar4: CATEG 
+4474	TarVar4: CATEG 
+4475	TarVar4: CATEG 
+4476	TarVar4: CATEG 
+4477	TarVar4: CATEG 
+4478	TarVar4: CATEG 
+4479	TarVar4: CATEG 
+4480	TarVar4: CATEG 
+4481	TarVar4: CATEG 
+4482	TarVar4: NoLight 
+4483	TarVar4: NoLight 
+4484	TarVar4: NoReward 
+4485	TarVar4: NoReward 
+4486	TarVar4: Nothing 
+4487	TarVar4: Nothing 
+4488	TarVar4: CATEG 
+4489	TarVar4: CATEG 
+4490	TarVar4: CATEG 
+4491	TarVar4: CATEG 
+4492	TarVar4: CATEG 
+4493	TarVar4: CATEG 
+4494	TarVar4: CATEG 
