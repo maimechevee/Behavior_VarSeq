@@ -76,15 +76,15 @@ def create_session_dictionary(file):
                                           boundaries['U:'],
                                           boundaries['W:'])
 
-        p = medpc_data['Protocol'].lower()
-        if 'fr1' in p or 'noforcedr' in p or 'nolight' in p:
+        protocol = medpc_data['Protocol'].lower()
+        if 'fr1' in protocol or 'noforcedr' in protocol or 'nolight' in protocol:
             """Using "N/A" for when we expect to not have timestamps for an
             event will make it more obvious that if there is a mistake, since
             None is automatically placed as the value when dict is initialized
             using only keys.
             """
             medpc_data['Variance'] = 'N/A'
-        elif 'fr5' in p and boundaries['F:']:
+        elif 'fr5' in protocol and boundaries['F:']:
             medpc_data['Variance'] = extract_event(file_info,
                                                    boundaries['F:'],
                                                    boundaries['G:'])
@@ -122,6 +122,7 @@ def create_medpc_master(mice,  file_dir):
             day_df.at[0, 'Run Time'] = (medpc_data['Run Time'])
             medpc_master = pd.concat([medpc_master, day_df], ignore_index=True)
     assert medpc_master.empty is False, 'Empty dataframe.'
+    medpc_master = medpc_master.sort_values(by=['Mouse', 'Date'])
     return medpc_master
 
 

@@ -11,7 +11,7 @@ class Mouse():
     all the different mice we've used.
     """
     
-    def __init__(self, num, discard, experiments = {}):
+    def __init__(self, num, discard='', experiments = {}):
         """Constructor for mouse class.
         
         Num: subject number (int)
@@ -22,7 +22,7 @@ class Mouse():
                 TarVar2: CATEG
                 }
             
-        discard: Boolean
+        discard: 'discard' if we are discarding, empty string otherwise
         """
         self.num = num
         self.experiments = experiments
