@@ -67,11 +67,11 @@ def create_session_dictionary(file):
         """ Populate dictionary using extract_event function and row nums."""
         medpc_data['Reward'] = extract_event(file_info, boundaries['Z:'], 0)
         medpc_data['Lever'] = extract_event(file_info,
-                                            boundaries['Y:'],
-                                            boundaries['Z:'])
+                                            boundaries['X:'],
+                                            boundaries['Y:'])
         medpc_data['Lick'] = extract_event(file_info,
-                                           boundaries['X:'],
-                                           boundaries['Y:'])
+                                           boundaries['Y:'],
+                                           boundaries['Z:'])
         medpc_data['IPI'] = extract_event(file_info,
                                           boundaries['U:'],
                                           boundaries['W:'])
@@ -103,6 +103,7 @@ def create_medpc_master(mice,  file_dir):
                'Lick', 'IPI', 'Variance']
     medpc_master = pd.DataFrame(columns=columns)
     for mouse in mice:  # loop through each mouse
+        print(mouse)
         # find all the files that have the mouse's name in them
         fnall = [dayfile for dayfile in os.listdir(file_dir)
                  if str(mouse) in dayfile]
@@ -152,6 +153,17 @@ def discard_mice(master_df, discard_list):
     indices = [x for l in indices for x in l]
     return master_df.drop(indices, axis=0)
 
+def discard_day(master_df, discard_list):
+    """discard_list is a list of lists
+    with [mouse, day]
+    """
+    indices = []
+    for each in discard_list:
+        mouse_df=master_df[master_df['Mouse'] == each[0]]
+        day_df=mouse_df[mouse_df['Date'] == each[1]]
+        indices.append(day_df.index)
+    indices = [x for l in indices for x in l]
+    return master_df.drop(indices, axis=0)
 
 if __name__ == '__main__':
     mice = [i for i in range(4386, 4414)]

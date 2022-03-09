@@ -348,26 +348,26 @@ for j,mouse in enumerate(np.unique(master_df['Mouse'])):
     #First days
     for date in [np.unique(mouse_df['Date'])[0]]:
         date_df=mouse_df[mouse_df['Date']==date]
-        if math.isnan(sum(sum(date_df['Lever'].values))):
-            mouse_rewards[0]=0
-        else:
-            relevant_presses=len(date_df['Reward'].values[0])*5
-            total_presses=len(date_df['Lever'].values[0])
-            extra_presses=total_presses-relevant_presses
-            extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
-            mouse_rewards[0]=extra_press_per_seq 
+        # if math.isnan(sum(sum(date_df['Lever'].values))):
+        #     mouse_rewards[0]=0
+        # else:
+        relevant_presses=len(date_df['Reward'].values[0])*5
+        total_presses=len(date_df['Lever'].values[0])
+        extra_presses=total_presses-relevant_presses
+        extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
+        mouse_rewards[0]=extra_press_per_seq 
         
     #Last days
     for date in [np.unique(mouse_df['Date'])[-1]]:
         date_df=mouse_df[mouse_df['Date']==date]
-        if math.isnan(sum(sum(date_df['Lever'].values))):
-            mouse_rewards[1]=0
-        else:
-            relevant_presses=len(date_df['Reward'].values[0])*5
-            total_presses=len(date_df['Lever'].values[0])
-            extra_presses=total_presses-relevant_presses
-            extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
-            mouse_rewards[1]=extra_press_per_seq 
+        # if math.isnan(sum(sum(date_df['Lever'].values))):
+        #     mouse_rewards[1]=0
+        # else:
+        relevant_presses=len(date_df['Reward'].values[0])*5
+        total_presses=len(date_df['Lever'].values[0])
+        extra_presses=total_presses-relevant_presses
+        extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
+        mouse_rewards[1]=extra_press_per_seq 
            
     print(mouse)
     if date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
@@ -395,14 +395,14 @@ for j,mouse in enumerate(np.unique(master_df['Mouse'])):
     #First days
     for i,date in enumerate(np.unique(mouse_df['Date'])):
         date_df=mouse_df[mouse_df['Date']==date]
-        if math.isnan(sum(sum(date_df['Lever'].values))):
-            mouse_rewards[i]=0
-        else:
-            relevant_presses=len(date_df['Reward'].values[0])*5
-            total_presses=len(date_df['Lever'].values[0])
-            extra_presses=total_presses-relevant_presses
-            extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
-            mouse_rewards[i]=extra_press_per_seq 
+        # if math.isnan(sum(sum(date_df['Lever'].values))):
+        #     mouse_rewards[i]=0
+        # else:
+        relevant_presses=len(date_df['Reward'].values[0])*5
+        total_presses=len(date_df['Lever'].values[0])
+        extra_presses=total_presses-relevant_presses
+        extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
+        mouse_rewards[i]=extra_press_per_seq 
         
    
            
