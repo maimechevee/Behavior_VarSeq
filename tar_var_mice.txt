@@ -1,0 +1,84 @@
+4217, TarVar1-FR5Var, 1
+4218, TarVar1-FR5, 1
+4219, TarVar1-FR5Var, TarVar2-CATEG, 0
+4220, TarVar1-FR5Var, 0
+4221, TarVar1-FR5, 1
+4222, TarVar1-FR5, TarVar2-CATEG, 0
+4223, TarVar1-FR5Var, 0
+4224, TarVar1-FR5, TarVar2-CATEG, 0
+4225, TarVar1-FR5, TarVar2-CATEG, 0
+4226, TarVar1-FR5, TarVar2-CATEG, 0
+4227, TarVar1-FR5Var, 1
+4228, TarVar1-FR5Var, 0
+4229, TarVar1-FR5, TarVar2-CATEG, 0
+4230, TarVar1-FR5, TarVar2-CATEG, 0
+4231, TarVar1-FR5Var, TarVar2-CATEG, 0
+4232, TarVar1-FR5, 1
+4233, TarVar1-FR5, 0
+4234, TarVar1-FR5Var, TarVar2-CATEG, 0
+4235, TarVar1-FR5Var, 1
+4236, TarVar1-FR5Var, 1
+4237, TarVar1-FR5, 1
+4238, TarVar1-FR5Var, 1
+4239, TarVar1-FR5Var, TarVar2-CATEG, 0
+4240, TarVar1-FR5, TarVar2-CATEG, 0
+4241, TarVar1-FR5Var, TarVar2-CATEG, 0
+4242, TarVar1-FR5, 0
+4243, TarVar1-FR5, 0
+4244, TarVar1-FR5, 1
+4386, TarVar3-NoLight, 0
+4387, TarVar3-NoLight, 0
+4388, TarVar3-NoReward, 0
+4389, TarVar3-NoReward, 0
+4390, TarVar3-Nothing, 0
+4391, TarVar3-Nothing, 0
+4392, TarVar3-CATEG, 0
+4393, TarVar3-CATEG, 0
+4394, TarVar3-CATEG, 0
+4395, TarVar3-CATEG, 0
+4396, TarVar3-NoLight, 0
+4397, TarVar3-NoLight, 0
+4398, TarVar3-NoReward, 0
+4399, TarVar3-NoReward, 0
+4400, TarVar3-Nothing, 0
+4401, TarVar3-CATEG, 0
+4402, TarVar3-CATEG, 0
+4403, TarVar3-CATEG, 0
+4404, TarVar3-CATEG, 0
+4405, TarVar3-CATEG, 0
+4406, TarVar3-Nothing, 0
+4407, TarVar3-CATEG, 0
+4408, TarVar3-CATEG, 0
+4409, TarVar3-CATEG, 0
+4410, TarVar3-CATEG, 0
+4411, TarVar3-CATEG, 0
+4412, TarVar3-CATEG, 0
+4413, TarVar3-CATEG, 0
+4467, TarVar4-NoLight, 0
+4468, TarVar4-NoLight, 0
+4469, TarVar4-NoReward, 0
+4470, TarVar4-NoReward, 0
+4471, TarVar4-Nothing, 0
+4472, TarVar4-Nothing, 0
+4473, TarVar4-CATEG, 0
+4474, TarVar4-CATEG, 0
+4475, TarVar4-CATEG, 0
+4476, TarVar4-CATEG, 0
+4477, TarVar4-CATEG, 0
+4478, TarVar4-CATEG, 0
+4479, TarVar4-CATEG, 0
+4480, TarVar4-CATEG, 0
+4481, TarVar4-CATEG, 0
+4482, TarVar4-NoLight, 0
+4483, TarVar4-NoLight, 0
+4484, TarVar4-NoReward, 0
+4485, TarVar4-NoReward, 0
+4486, TarVar4-Nothing, 0
+4487, TarVar4-Nothing, 0
+4488, TarVar4-CATEG, 0
+4489, TarVar4-CATEG, 0
+4490, TarVar4-CATEG, 0
+4491, TarVar4-CATEG, 0
+4492, TarVar4-CATEG, 0
+4493, TarVar4-CATEG, 0
+4494, TarVar4-CATEG, 0
