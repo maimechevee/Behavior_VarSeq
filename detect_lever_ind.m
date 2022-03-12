@@ -1,18 +1,13 @@
-function data = detect_lever_ind(magnet_data, threshold, want_plot,lever_data)
+function data = detect_lever_ind(magnet_data, threshold, want_plot,lever_data, magnet_on, time_on)
 
 % Initialization-----------------------------------------------------------
 magnet_roll = magnet_data{1};
 time_roll = magnet_data{2};
 delay = magnet_data{3};
 
-magnet_off = median(magnet_roll(time_roll < time_roll(1) + 1000));
-on = abs(magnet_roll - magnet_off) > 230;
-magnet_on = magnet_roll(on);
-time_on = time_roll(on);
-orig_baseline = median(magnet_on(1:1000));
-start_ind = length(time_roll(time_roll <= time_on(1)));
+[start_ind, orig_baseline, magnet_off, threshold_ON] = detect_baseline(magnet_data, delay);
 
-if want_plot
+if want_plot %check out boundary detection
     figure(1)
     hold on
     xlabel('Time (s)')
@@ -26,13 +21,14 @@ end
 % Calculate Baselines------------------------------------------------------
 
 % Flag places to potentially calculate baseline
-temp = magnet_off + 240;
+temp = orig_baseline -  threshold_ON;
 plot([time_roll(1)/1000,time_roll(end)/1000],[temp, temp])
+hold on
 baseline_flags = [];
 
 for ii = 2:length(time_roll(time_roll <= time_on(end)))-1
-    cond_1 = magnet_roll(ii + 1) < temp && magnet_roll(ii) > temp;
-    cond_2 = magnet_roll(ii - 1) < temp && magnet_roll(ii) > temp;
+    cond_1 = magnet_roll(ii + 1) < temp && magnet_roll(ii) > temp; % a drop below baseline
+    cond_2 = magnet_roll(ii - 1) < temp && magnet_roll(ii) > temp; % a rise to baseline
     if cond_1
         baseline_flags = [baseline_flags ii];
         if want_plot
