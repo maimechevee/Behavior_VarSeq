@@ -1020,14 +1020,14 @@ test_mice=[4409,4230,4223]
 All_mouse_heatmap_seq=np.zeros((70,15))
 All_seq_LPrates=[]
 counter=0
-for j,mouse in enumerate(np.unique(master_df['Mouse'])):#enumerate(High_resp_CATEG)
+for j,mouse in enumerate(test_mice):#enumerate(High_resp_CATEG)   np.unique(master_df['Mouse'])
     mouse_protocols=[]
     mouse_df=master_df[master_df['Mouse']==mouse]
     mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
     mouse_heatmap_seq=np.zeros((70,15))
     seq_day_LPrates=[]
-    #if 1:
-    if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5': #'MC_magbase_ForcedReward_LongWinVarTarget_FR5'
+    if 1:
+    #if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5': #'MC_magbase_ForcedReward_LongWinVarTarget_FR5'
     #if mouse_df['Protocol'].values[0]not in ['MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5','MC_magbase_ForcedReward_LongWinVarTarget_FR5'   ]: 
         print(mouse)
         for i,date in enumerate(np.unique(mouse_df['Date'])):
@@ -1211,6 +1211,93 @@ plt.yscale('log')
 mice=[4219,4224,4225,4226,4222,4230,4231,4239,4234,4240,4241,4229]
 file_dir='G:/Behavior study Dec2021/All medpc together'
 master_df2 = create_medpc_master(mice, file_dir)
+
+###############################################################################
+# within sequence IPI variance (heatmaps - all mice treated equal)
+###############################################################################
+All_mouse_heatmap_seq=np.zeros((70,25))
+All_seq_LPrates=[]
+counter=0
+for j,mouse in enumerate(mice):#enumerate(High_resp_CATEG)   np.unique(master_df['Mouse'])
+    mouse_protocols=[]
+    mouse_df=master_df2[master_df2['Mouse']==mouse]
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    mouse_heatmap_seq=np.zeros((70,25))
+    seq_day_LPrates=[]
+    if 1:
+    #if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5': #'MC_magbase_ForcedReward_LongWinVarTarget_FR5'
+    #if mouse_df['Protocol'].values[0]not in ['MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5','MC_magbase_ForcedReward_LongWinVarTarget_FR5'   ]: 
+        print(mouse)
+        for i,date in enumerate(np.unique(mouse_df['Date'])):
+            date_df=mouse_df[mouse_df['Date']==date]
+            IPIs=np.array(date_df['IPI'].values[0])
+            #find the index of 5 presses preceding each reward
+            rewards=date_df['Reward'].values[0]
+            #LPs=np.array(date_df['Variance'].values[0])
+            # day_rates=[]
+            # for rwd in rewards:
+            #     LP_indices=np.where(LPs<=rwd)[0][-5:]
+            #     seq_duration=LPs[LP_indices[-1]] - LPs[LP_indices[0]]
+            #     day_rates.append(5/seq_duration)
+            LPs=np.array(date_df['Lever'].values[0])
+            day_variances=[]
+            for rwd in rewards:
+                LP_indices=np.where(LPs<=rwd)[0][-5:]
+                IPI_indices=LP_indices[1:]
+                variance=np.var(IPIs[IPI_indices])/np.mean(IPIs[IPI_indices])
+                day_variances.append(variance)
+           
+                
+            seq_day_LPrates.append(np.log10(day_variances))
+            if len(seq_day_LPrates[0])<2:
+                seq_data=np.zeros((1,100))
+            else:
+                seq_data,edges=np.histogram(np.log10(day_variances), bins=70, range=(-3,4), density=True)
+            mouse_heatmap_seq[:,i]=seq_data
+            
+  
+        All_mouse_heatmap_seq=np.add(All_mouse_heatmap_seq,mouse_heatmap_seq)
+        All_seq_LPrates.append(seq_day_LPrates)
+        counter+=1
+        
+        fig,ax=plt.subplots(1,1, figsize=(5,10))
+        plt.imshow(mouse_heatmap_seq, alpha=0.5, cmap='jet')
+        plt.plot([x*10+30 for x in [np.median(x) for x in seq_day_LPrates]], color='r') #10=40(bins)/(3-(-1)) (range) +10 (origin=-1) (histogram adjustements)
+        plt.title(str(mouse)+np.unique(mouse_df['Protocol'])[-1])
+        plt.ylabel('IPI (s)')
+        log_values=[float(x) for x in edges[[0,10,20,30,40]]]
+        plt.yticks([0,10,20,30,40],[str(10**x) for x in log_values])
+        plt.xlabel('Sessions (#)')
+       
+        
+        
+Mean_mouse_heatmap_seq=All_mouse_heatmap_seq/counter
+Median_seq=[]
+for day in range(10):
+    values=[]
+    for mouse in range(len(All_seq_LPrates)):
+        if len(All_seq_LPrates[mouse])>day:
+            values.append( All_seq_LPrates[mouse][day])
+    values=[x for l in values for x in l]
+    Median_seq.append(np.median(values))
+
+    
+fig,ax=plt.subplots(1,1, figsize=(5,10))
+#plt.colorbar()
+plt.imshow(Mean_mouse_heatmap_seq, alpha=0.5, cmap='jet')
+plt.plot([x*10+30 for x in Median_seq], color='r') #10=40(bins)/(3-(-1)) (range) +10 (origin=-1) (histogram adjustements)
+#plt.title(str(mouse)+np.unique(mouse_df['Protocol'])[-1])
+plt.ylabel('within sequence IPI variance')
+log_values=[float(x) for x in edges[[0,20,40, 60, 80, 100]]]
+plt.yticks([0,20,40, 60, 80, 100],[str(10**x) for x in log_values])
+plt.xlabel('Sessions (#)')
+fig,ax=plt.subplots(1,1, figsize=(5,5))
+ax.bar(edges[1:],Mean_mouse_heatmap_seq[:,0], alpha=0.5, color='orange', width=0.1)
+ax.bar(edges[1:],Mean_mouse_heatmap_seq[:,9],  alpha=0.5,  color='teal', width=0.1)
+ax.set_xticks(edges[[0,20,40, 60, 80, 100]])
+ax.set_xticklabels([str(10**x) for x in log_values])
+ax.set_xlabel('within sequence IPI variance')
+
 ###############################################################################
 # plot variance starting with first FR5/Va5 and into CATEG
 ###############################################################################
@@ -1279,7 +1366,7 @@ plt.yscale('log')
 # Example rasters of LPs
 ###############################################################################
 
-test_mice=[4219]#[4219, 4225,4230,4239]
+test_mice=[4229]#[4219, 4225,4230,4239]
 for j,mouse in enumerate(test_mice):
     mouse_protocols=[]
     mouse_df=master_df2[master_df2['Mouse']==mouse]
@@ -1311,4 +1398,8 @@ for j,mouse in enumerate(test_mice):
         plt.hist(Presses[:,3], bins=30, range=Range, color='r', alpha=0.5)
         plt.hist(Presses[:,4], bins=30, range=Range, color='g', alpha=0.5)
     
-       
+ 
+###############################################################################
+# PART 4: MAGNET
+############################################################################### 
+
