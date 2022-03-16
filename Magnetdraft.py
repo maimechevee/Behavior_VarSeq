@@ -221,18 +221,18 @@ def Get_press_indices(Data, master_df, mouse, date):
     Data.Hall_sensor=smooth_data
 
     # truncate data to keep only time when the magnet was on
-    beg_ind, end_ind, rough_baseline, Data = detect_magnet_ON_OFF(Data, plot=True)
+    beg_ind, end_ind, rough_baseline, Data = detect_magnet_ON_OFF(Data, plot=False)
     Data=Data[beg_ind:end_ind]
     
     #identify cutoff
-    cutoff = identify_cutoff(Data, rough_baseline, master_df, mouse, date, plot=True)
+    cutoff = identify_cutoff(Data, rough_baseline, master_df, mouse, date, plot=False)
     
     if math.isnan(cutoff):
         print(str(mouse) +' '+date+' is not straight forward.')
         return Data, 0,0
     
     #check
-    number_of_presses, Down_idx, Up_idx = detect_press(Data,target=cutoff, plot=True)
+    number_of_presses, Down_idx, Up_idx = detect_press(Data,target=cutoff, plot=False)
 
     #Adjust indices to start and end at right place, not at threshold crossing
     new_Down_idx, new_Up_idx = adjust_press_idx(Data,Down_idx, Up_idx, plot=True)
@@ -276,6 +276,7 @@ def adjust_press_idx(Data,Down_idx, Up_idx, plot=False):
         plt.plot(Data.Time.values, Data.Hall_sensor.values, alpha=0.5)
         plt.scatter(time_stamps[new_Down_idx], magnet[new_Down_idx], c='b')
         plt.scatter(time_stamps[new_Up_idx], magnet[new_Up_idx], c='r')
+        offset = (1, 1) # move text each time there's a new press in case of overlapping presses
         for [press_num, press_ind, a, b, v] in zip(range(len(new_Down_idx)),
                                         new_Down_idx,
                             time_stamps[new_Down_idx], 
@@ -283,11 +284,13 @@ def adjust_press_idx(Data,Down_idx, Up_idx, plot=False):
                             magnet[new_Down_idx]):
             plt.hlines(v,a,b)
             plt.text(a, v + 1, f'{press_num + 1}') # Plot predicted press num
-            plt.text(a, v - 2, f'{press_ind}', fontsize=8) # Plot predicted press num
-    for [press_ind, a, v] in zip(new_Up_idx,
-                           time_stamps[new_Up_idx], 
-                           magnet[new_Up_idx]):
-        plt.text(a, v - 2, f'{press_ind}', fontsize=8)
+            plt.text(a, v - (offset[0] % 2), f'{press_ind}', fontsize=8) # Plot predicted press num
+            offset = (offset[0] + 1, offset[1])
+        for [press_ind, a, v] in zip(new_Up_idx,
+                               time_stamps[new_Up_idx], 
+                               magnet[new_Up_idx]):
+            plt.text(a, v - (offset[1] % 2), f'{press_ind}', fontsize=8)
+            offset = (offset[0], offset[1] + 1)
     return new_Down_idx, new_Up_idx
     
 
