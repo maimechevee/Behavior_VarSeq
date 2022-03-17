@@ -277,19 +277,17 @@ def adjust_press_idx(Data,Down_idx, Up_idx, plot=False):
         plt.scatter(time_stamps[new_Down_idx], magnet[new_Down_idx], c='b')
         plt.scatter(time_stamps[new_Up_idx], magnet[new_Up_idx], c='r')
         offset = (1, 1) # move text each time there's a new press in case of overlapping presses
-        for [press_num, press_ind, a, b, v] in zip(range(len(new_Down_idx)),
-                                        new_Down_idx,
+        for [ind, a, b, v] in zip(new_Down_idx,
                             time_stamps[new_Down_idx], 
                             time_stamps[new_Up_idx], 
                             magnet[new_Down_idx]):
             plt.hlines(v,a,b)
-            plt.text(a, v + 1, f'{press_num + 1}') # Plot predicted press num
-            plt.text(a, v - (offset[0] % 2), f'{press_ind}', fontsize=8) # Plot predicted press num
+            plt.text(a, v - (offset[0] % 2), f'{ind}', fontsize=8) # Plot predicted press num
             offset = (offset[0] + 1, offset[1])
-        for [press_ind, a, v] in zip(new_Up_idx,
+        for [ind, a, v] in zip(new_Up_idx,
                                time_stamps[new_Up_idx], 
                                magnet[new_Up_idx]):
-            plt.text(a, v - (offset[1] % 2), f'{press_ind}', fontsize=8)
+            plt.text(a, v - (offset[1] % 2), f'{ind}', fontsize=8)
             offset = (offset[0], offset[1] + 1)
     return new_Down_idx, new_Up_idx
     
@@ -420,6 +418,29 @@ def manual_pairwise_pearsonr(A_array,B_array):
     pcorr = ((p1 - p2)/np.sqrt(p4*p3[:,None]))
     return pcorr
 
+def load_excel_log(file, master_df):
+    excel_log = pd.read_csv(file, delimiter=',')
+    good_presses = {}
+    incorrect_indices = []
+    drop_sequence = ['False negative', 'Missed']
+    drop = 'False positive'
+    for ind, press_log in excel_log.iterrows():
+        num = press_log['Medpc Press Number']
+        if num != drop:
+            down = press_log['Python Down Index']
+            up = press_log['Python Up Index']
+            if '*' in down:
+                down = down[:-1]
+                incorrect_indices.append(down)
+            if '*' in up:
+                up = up[:-1]
+                incorrect_indices.append(up)
+            if down.isnumeric():
+                down = int(down)
+            if up.isnumeric():
+                up = int(up)
+            good_presses[num] = down, up
+    return good_presses
 
 """
 Plots to make
@@ -432,13 +453,16 @@ only presses not in sequence
 """
 
 if __name__ == '__main__':
-    from create_medpc_master import create_medpc_master
-    mice = [i for i in range(4386, 4414)]
-    file_dir = '/Users/emma-fuze-grace/Lab/Medpc Data'
-    master_df = create_medpc_master(mice, file_dir)
-    mouse = 4407
-    date = '20220209'
-    filename = f'/Users/emma-fuze-grace/Lab/Hall Sensor Data/HallSensor_{date}_{mouse}.CSV'
-    Data = pd.read_csv(filename)
-    Data.columns = ['Hall_sensor','Magnet_block','Time']
-    Data, new_Down_idx, new_Up_idx = Get_press_indices(Data, master_df, mouse, date)
+    # from create_medpc_master import create_medpc_master
+    # mice = [i for i in range(4386, 4414)]
+    # file_dir = '/Users/emma-fuze-grace/Lab/Medpc Data'
+    # master_df = create_medpc_master(mice, file_dir)
+    # mouse = 4407
+    # date = '20220209'
+    # filename = f'/Users/emma-fuze-grace/Lab/Hall Sensor Data/HallSensor_{date}_{mouse}.CSV'
+    # Data = pd.read_csv(filename)
+    # Data.columns = ['Hall_sensor','Magnet_block','Time']
+    # Data, new_Down_idx, new_Up_idx = Get_press_indices(Data, master_df, mouse, date)
+    good_presses = load_excel_log('MagnetIndexLog_20220209_4407.csv')
+    
+    
