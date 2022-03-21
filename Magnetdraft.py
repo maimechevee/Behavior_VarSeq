@@ -201,7 +201,7 @@ import math
 
 
 # /Users/emma-fuze-grace/Lab/2022-02_TarVar_Categ_01/2022-02_TarVar_Categ_01_data
-def Get_press_indices(Data, master_df, mouse, date):
+def Get_press_indices(Data, master_df, mouse, date, want_plot=[False, False, False, False]):
     from scipy.ndimage.filters import uniform_filter1d
     from scipy.fftpack import rfft, irfft, fftfreq    
     W = fftfreq(len(Data.Hall_sensor), d=Data.Time.values[-1] - Data.Time.values[0])
@@ -221,21 +221,21 @@ def Get_press_indices(Data, master_df, mouse, date):
     Data.Hall_sensor=smooth_data
 
     # truncate data to keep only time when the magnet was on
-    beg_ind, end_ind, rough_baseline, Data = detect_magnet_ON_OFF(Data, plot=False)
+    beg_ind, end_ind, rough_baseline, Data = detect_magnet_ON_OFF(Data, plot=want_plot[0])
     Data=Data[beg_ind:end_ind]
     
     #identify cutoff
-    cutoff = identify_cutoff(Data, rough_baseline, master_df, mouse, date, plot=False)
+    cutoff = identify_cutoff(Data, rough_baseline, master_df, mouse, date, plot=want_plot[1])
     
     if math.isnan(cutoff):
         print(str(mouse) +' '+date+' is not straight forward.')
         return Data, 0,0
     
     #check
-    number_of_presses, Down_idx, Up_idx = detect_press(Data,target=cutoff, plot=False)
+    number_of_presses, Down_idx, Up_idx = detect_press(Data,target=cutoff, plot=want_plot[2])
 
     #Adjust indices to start and end at right place, not at threshold crossing
-    new_Down_idx, new_Up_idx = adjust_press_idx(Data,Down_idx, Up_idx, plot=True)
+    new_Down_idx, new_Up_idx = adjust_press_idx(Data,Down_idx, Up_idx, plot=want_plot[3])
 
     #Normalize te entire trace
     Data.Hall_sensor=sp.stats.zscore(Data.Hall_sensor.values)
@@ -246,9 +246,10 @@ def Get_press_indices(Data, master_df, mouse, date):
     lever_presses = mouse_df[mouse_df['Date'] == date]['Lever'].values[0]
     x = [(1000 * press) + time_stamps[0] for press in lever_presses]
     y = [rough_baseline + 25 for _ in range(len(lever_presses))]
-    plt.plot(x, y, '*--')
-    for press_num, press_time in enumerate(x):
-        plt.text(press_time, rough_baseline + 26, f'{press_num}')
+    if want_plot[3]:
+        plt.plot(x, y, '*--')
+        for press_num, press_time in enumerate(x):
+            plt.text(press_time, rough_baseline + 26, f'{press_num}')
     return Data, new_Down_idx, new_Up_idx
     
     
@@ -416,17 +417,34 @@ def manual_pairwise_pearsonr(A_array,B_array):
     
     # Finally compute Pearson Correlation Coefficient as 2D array 
     pcorr = ((p1 - p2)/np.sqrt(p4*p3[:,None]))
+    print(p1)
+    print(p2)
+    print(p3)
+    print(p4)
     return pcorr
 
-def load_excel_log(file, master_df):
+def load_excel_log(file, master_df, mouse, date):
+    """Read press indices from excel annotations into python to drop false + / -
+    and separate into in / out of sequences.
+    """
+    # Find which sequences are in-sequence
+    mouse_df = master_df[master_df['Mouse'] == mouse]
+    LPs = np.array(mouse_df[mouse_df['Date'] == date]['Lever'].values[0][1:])
+    rewards = np.array(mouse_df[mouse_df['Date'] == date]['Reward'].values[0])
+    in_sequence_ind = []
+    for rwd in rewards:
+        in_sequence_ind.append([ind for ind in np.where(LPs <= rwd)[0][-5:]])
+    
+    # Read excel log annotations
     excel_log = pd.read_csv(file, delimiter=',')
-    good_presses = {}
+    presses = {}
     incorrect_indices = []
-    drop_sequence = ['False negative', 'Missed']
     drop = 'False positive'
+    
+    # I starred the ones that had suspect indices
     for ind, press_log in excel_log.iterrows():
-        num = press_log['Medpc Press Number']
-        if num != drop:
+        num = press_log['Medpc Press Ind']
+        if num != drop: # I dropped the false positives 
             down = press_log['Python Down Index']
             up = press_log['Python Up Index']
             if '*' in down:
@@ -439,11 +457,91 @@ def load_excel_log(file, master_df):
                 down = int(down)
             if up.isnumeric():
                 up = int(up)
-            good_presses[num] = down, up
-    return good_presses
+            presses[num] = down, up
+    in_sequence_presses = []
+    
+    # Compile a list of in-sequence presses
+    for sequence in in_sequence_ind:
+        in_sequence_presses.append([])
+        for press_ind in sequence:
+            in_sequence_presses[-1].append(presses[press_ind])
+            
+    # After determining which presses are in-sequence, we can either drop an
+    # entire sequence if it contains one false negative or a single press if it
+    # is an out-of-sequence false negative
+    temp = []
+    for sequence_ind, sequence in enumerate(in_sequence_presses):
+        keep = True
+        for press in sequence:
+            if isinstance(press[0], str) or isinstance(press[1], str):
+                keep = False
+        if keep:
+            temp.append([])
+            temp[-1] = sequence
+    in_sequence_presses = temp
+            
+    # Compile a list of out-of-sequence presses
+    out_sequence_presses = []
+    out_sequence_ind = set(presses.keys()) - set([ind for seq in in_sequence_ind for ind in seq])
+    for press_ind in out_sequence_ind:
+        if isinstance(presses[press_ind][0], int) and isinstance(presses[press_ind][1], int):
+            out_sequence_presses.append(presses[press_ind])
+    return in_sequence_presses, out_sequence_presses, incorrect_indices
+
+def five_by_five(filename, master_df, mouse, date, length_of_vector=1000):
+    """Median pairwise correlations between press no. 1->5 for all presses in
+    a single mouse's session.
+    """
+    Data=pd.read_csv(filename)
+    Data.columns=['Hall_sensor','Magnet_block','Time']
+    Data, new_Down_idx, new_Up_idx = Get_press_indices(Data, master_df, mouse, date)
+    magnet = Data['Hall_sensor'].values
+    in_sequence_presses, out_sequence_presses, incorrect_indices = load_excel_log('MagnetIndexLog_20220209_4407.csv',
+                                                                       master_df,
+                                                                       mouse,
+                                                                       date)
+    final_matrix = np.eye(5)
+    all_seq_corrs = {}
+    
+    press_matrix = np.zeros([5,length_of_vector], int)
+    sequence = in_sequence_presses[0]
+    final_matrix = [[[] for _ in range(5)] for _ in range(5)]
+    for ind in range(5):
+        final_matrix[ind][ind] = 1
+    for seq_ind, sequence in enumerate(in_sequence_presses):
+        for press_ind,press in enumerate(sequence):
+            pressDown = press[0]
+            pressUp = press[1]
+            
+            if pressUp-pressDown>length_of_vector:
+                stop=length_of_vector
+            else:
+                stop=pressUp-pressDown
+                
+            press_matrix[press_ind,:stop]=magnet[pressDown:pressDown+stop]
+            if seq_ind ==3:
+                plt.plot(magnet[pressDown:pressDown+stop])
+        pcorr = manual_pairwise_pearsonr(press_matrix.T,press_matrix.T)
+        all_seq_corrs[seq_ind] = pcorr
+        
+        for i in range(5):
+            for j in range(5):
+                if i != j:
+                    final_matrix[i][j].append(pcorr[i, j])
+                    
+    for i in range(5):
+        for j in range(5):
+            if i != j:
+                final_matrix[i][j] = np.median(final_matrix[i][j])
+    
+    flat_matrix = np.ravel(final_matrix)
+    drop_Ones = flat_matrix[flat_matrix!=1]
+    
+    return final_matrix, all_seq_corrs, np.median(drop_Ones)
+            
 
 """
-Plots to make
+Plots to make`
 5 x 5 within session
 10 x 10 by day (x5 per no# in press)
                 
@@ -453,16 +551,29 @@ only presses not in sequence
 """
 
 if __name__ == '__main__':
-    # from create_medpc_master import create_medpc_master
-    # mice = [i for i in range(4386, 4414)]
-    # file_dir = '/Users/emma-fuze-grace/Lab/Medpc Data'
-    # master_df = create_medpc_master(mice, file_dir)
-    # mouse = 4407
-    # date = '20220209'
-    # filename = f'/Users/emma-fuze-grace/Lab/Hall Sensor Data/HallSensor_{date}_{mouse}.CSV'
-    # Data = pd.read_csv(filename)
-    # Data.columns = ['Hall_sensor','Magnet_block','Time']
-    # Data, new_Down_idx, new_Up_idx = Get_press_indices(Data, master_df, mouse, date)
-    good_presses = load_excel_log('MagnetIndexLog_20220209_4407.csv')
+    from create_medpc_master import create_medpc_master
+    mice = [i for i in range(4386, 4414)]
+    file_dir = '/Users/emma-fuze-grace/Lab/Medpc Data'
+    master_df = create_medpc_master(mice, file_dir)
+    mouse = 4407
+    date = '20220209'
+    filename = f'/Users/emma-fuze-grace/Lab/Hall Sensor Data/HallSensor_{date}_{mouse}.CSV'
+    Data = pd.read_csv(filename)
+    Data.columns = ['Hall_sensor','Magnet_block','Time']
+    Data, new_Down_idx, new_Up_idx = Get_press_indices(Data, master_df, mouse, date)
+    magnet = Data['Hall_sensor'].values
+    magnet_log = 'MagnetIndexLog_20220209_4407.csv'
+    (in_sequence_presses, 
+     out_sequence_presses, 
+     incorrect_indices)  = load_excel_log(magnet_log,master_df,mouse,date)
+    final_matrix, all_seq_corrs, median_corr = five_by_five(filename, master_df, mouse, date)
+    # plt.figure()
+    # for press in out_sequence_presses:
+    #     plt.plot(magnet[press[0]:press[1]], 'k')
+    # plt.figure()
+    # for sequence in in_sequence_presses:
+    #     for press in sequence:
+    #         plt.plot(magnet[press[0]:press[1]], 'b')
     
+#TODO: Maake Check sequences in/out
     
