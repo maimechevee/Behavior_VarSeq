@@ -267,7 +267,7 @@ def Get_press_indices(Data, master_df, mouse, date, want_plot=[False, False, Fal
     return Data, new_Down_idx, new_Up_idx, saved_data, ratio, rough_baseline, zeroed_LPs
 
 def medpc_press_detection(Data, master_df, mouse, date,
-                          baseline_length=1000, smooth=15):
+                          baseline_length=1000, smooth=10):
     """
     Detect press indices using similar algorithm but dividing each search
     by adjusted medpc time stamps.
@@ -294,7 +294,6 @@ def medpc_press_detection(Data, master_df, mouse, date,
     date_df = mouse_df[mouse_df['Date']==date]
     magnet= saved_data['Hall_sensor'].values
     times= saved_data['Time'].values
-    plt.vlines(zeroed_LPs, rough_baseline + 10, rough_baseline - 45)
     baselines = np.zeros(len(zeroed_LPs) - 1)
     baselines[0] = np.median(magnet[new_Down_idx[0]-500:new_Down_idx[0]])
     final_press_ind = {ind:(0,0) for ind in range(len(zeroed_LPs))}
@@ -304,9 +303,11 @@ def medpc_press_detection(Data, master_df, mouse, date,
     
     histogram = np.histogram(magnet, bins=6)
     sorted_hist = sorted(zip(histogram[0], histogram[1]), reverse=True) 
-    offset = 0.5 * (sorted_hist[0][1] - sorted_hist[1][1])
-    original_target = sorted_hist[0][1] - offset
-    move = 0.05 * (sorted_hist[0][1] - sorted_hist[1][1])
+    top = sorted_hist[0][1]
+    bottom = sorted_hist[1][1]
+    original_offset = 0.65 * (top - bottom)
+    move = 0.025 * (top - bottom)
+    plt.vlines(zeroed_LPs, top + 10, bottom - 5)
     print(sorted_hist)
     for press_ind, press in enumerate(zeroed_LPs[1:-1], start=1):
         search_times = times[(times > press) & (times < zeroed_LPs[press_ind + 1])]
@@ -330,8 +331,8 @@ def medpc_press_detection(Data, master_df, mouse, date,
         baselines[press_ind]
         
         ### Optimize threshold based on the session's particular trace characteristics
-        curr_target = original_target
-        while curr_target < curr_baseline:
+        offset = original_offset
+        while (curr_target := curr_baseline - offset) < curr_baseline:
             plt.hlines(curr_target, times[search_start_ind], times[search_end_ind], color='k',
                        label='target', linestyle ='--')
             bool_mask = search_magnet < curr_target 
@@ -340,15 +341,17 @@ def medpc_press_detection(Data, master_df, mouse, date,
             Up_idx = bool_mask[:-1] & crossings # crossing and first is less than threshold = going up
             if np.where(Down_idx)[0].size > 0 or np.where(Up_idx)[0].size > 0:
                 break
-            curr_target += move
-            if curr_target > curr_baseline:
-                curr_target = sorted_hist[1][1] + 2*move # If can't find the press, start over at bottom of curve
+            offset -= move
+            # If can't find the press, start over at bottom of curve
+            if abs(curr_baseline - curr_target) < (5 * move):
+                offset = 0.9 * (top - bottom)
         baselines[press_ind] = curr_baseline
         
         ### Main Search ###
         num_down = np.where(Down_idx)[0].size
         num_up = np.where(Up_idx)[0].size
         num_detected = num_down + num_up
+        prev_up = final_press_ind[press_ind-1][1]
         if num_detected == 1:
             if num_down:
                 down_crossing = search_start_ind + np.where(Down_idx)[0][0]
@@ -356,10 +359,9 @@ def medpc_press_detection(Data, master_df, mouse, date,
                                          baselines[press_ind], smooth)
                 plt.plot(times[down_crossing], magnet[down_crossing],
                          marker='o', color='k')
-                final_up_idx = up_search(search_end_ind, magnet,
+                final_up_idx = up_search(search_end_ind - 50, magnet,
                                          baselines[press_ind], smooth)
             if num_up:
-                prev_up = final_press_ind[press_ind-1][1]
                 up_crossing = search_start_ind + np.where(Up_idx)[0][0]
                 plt.plot(times[up_crossing], magnet[up_crossing],
                          marker='o', color='k')
@@ -389,15 +391,20 @@ def medpc_press_detection(Data, master_df, mouse, date,
                                              baselines[press_ind], smooth)
                 final_up_idx = up_search(up_crossing, magnet, 
                                          baselines[press_ind], smooth)
-            else:
-                final_down_idx = down_search(down_crossing, magnet, 
+            else: 
+                if abs(final_down_idx - search_end_ind) > 25:
+                    final_down_idx = down_search(down_crossing, magnet, 
+                                                 baselines[press_ind], smooth)
+                    final_up_idx = up_search(search_end_ind, magnet, 
                                              baselines[press_ind], smooth)
-                final_up_idx = up_search(search_end_ind, magnet, 
-                                         baselines[press_ind], smooth)
+                else:
+                    final_down_idx = down_search(search_start_ind, magnet, 
+                                                 baselines[press_ind], smooth)
+                    final_up_idx = up_search(up_crossing, magnet, 
+                                             baselines[press_ind], smooth)
         elif num_detected > 2:
             down_crossing = search_start_ind + np.where(Down_idx)[0]
             up_crossing = search_start_ind + np.where(Up_idx)[0]
-            prev_up = final_press_ind[press_ind-1][1]
             plt.plot(times[down_crossing], magnet[down_crossing],
                      marker='o', color='k', linestyle='None')
             plt.plot(times[up_crossing], magnet[up_crossing],
@@ -420,13 +427,55 @@ def medpc_press_detection(Data, master_df, mouse, date,
         else:
             print(f'Error in crossings: {press_ind}, {num_detected}')
         
+        ### Check for indices being stuck on "hills" during search ###
+        # First need to check if far away from previous press and not too close to baseline
+        hill_end = 100
+        hill_start = 50
+        
+        # hill check for down indices
+        hill_check_down = magnet[
+            (final_down_idx - hill_end):(final_down_idx - hill_start)
+            ]
+        if abs(final_down_idx - prev_up) > 100 and abs(
+                magnet[final_down_idx] - curr_baseline) > (3 * move): 
+            if np.mean(hill_check_down) > magnet[final_down_idx] and magnet[final_down_idx] < curr_baseline:
+                plt.plot(times[(final_down_idx - hill_end):(final_down_idx - hill_start)],
+                         hill_check_down,
+                         color='r')
+                final_down_idx = down_search(final_down_idx, magnet, 
+                                             baselines[press_ind], smooth)
+            
+        # hill check for up indices
+        hill_check_up = magnet[
+            (final_up_idx + hill_start):(final_up_idx + hill_end)
+            ]
+        if abs(press - zeroed_LPs[press_ind + 1]) > 200: 
+            if abs(magnet[final_up_idx] - curr_baseline) > (3 * move):
+                if np.mean(hill_check_up) > magnet[final_up_idx] and magnet[final_up_idx] < curr_baseline:
+                    plt.plot(times[(final_up_idx + hill_start):(final_up_idx + hill_end)],
+                             hill_check_up,
+                             color='r')
+                    final_up_idx = up_search(final_up_idx, magnet, 
+                                                 baselines[press_ind], smooth)
+                
         # Plot down and up idx
+        if press_ind % 2:
+            color = 'm'
+        else:
+            color = 'g'
         plt.plot(times[final_down_idx], magnet[final_down_idx],
                      marker='o', color='b', markersize=4)
         plt.plot(times[final_up_idx], magnet[final_up_idx],
                  marker='o', color='r', markersize=6)
+        plt.plot(times[final_down_idx:final_up_idx], 
+                 magnet[final_down_idx:final_up_idx], color=color)
         final_press_ind[press_ind] = (final_down_idx, final_up_idx)
-        
+    
+    # plt.figure()
+    # down = [press[0] for press in final_press_ind.values()]
+    # up = [press[1] for press in final_press_ind.values()]
+    # for d, u in zip(down, up):
+    #     plt.plot(magnet[d:u])
     return final_press_ind
 
 
@@ -448,8 +497,11 @@ def down_search(start_ind, magnet, baseline, smooth_factor=10):
                 and magnet[final_down_idx] < baseline
                 ):
             final_down_idx -= 1 
-        while np.mean(
+        while (
+                np.mean(
                 magnet[final_down_idx:final_down_idx+smooth_factor] <= magnet[final_down_idx-1]
+                )
+                and magnet[final_down_idx] < baseline
                 ):
             final_down_idx -= 1 
     
