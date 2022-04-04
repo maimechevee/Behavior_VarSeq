@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 
 
-def extract_event(file_info, boundary_1, boundary_2):
+def extract_event(file, file_info, boundary_1, boundary_2):
     """Returns np array of floats for a single event given row nums in file
     where data begins and ends.
 
@@ -25,11 +25,17 @@ def extract_event(file_info, boundary_1, boundary_2):
     if boundary_2:
         for row in file_info[(boundary_1 + 1):boundary_2]:
             for item in row[7:-1].split():
-                event.append(float(item))
+                if item != 'ate:':
+                    event.append(float(item))
+                else:
+                    print(f'More than one entry in one file: {file}')
     else:
         for row in file_info[(boundary_1 + 1):]:
             for item in row[7:-1].split():
-                event.append(float(item))
+                if item != 'ate:':
+                    event.append(float(item))
+                else:
+                    print(f'More than one entry in one file: {file}')
     return event
 
 
@@ -65,14 +71,15 @@ def create_session_dictionary(file):
         boundaries = dict(zip(letters, row_nums))
 
         """ Populate dictionary using extract_event function and row nums."""
-        medpc_data['Reward'] = extract_event(file_info, boundaries['Z:'], 0)
-        medpc_data['Lever'] = extract_event(file_info,
+        
+        medpc_data['Reward'] = extract_event(file, file_info, boundaries['Z:'], 0)
+        medpc_data['Lever'] = extract_event(file, file_info,
                                             boundaries['X:'],
                                             boundaries['Y:'])
-        medpc_data['Lick'] = extract_event(file_info,
+        medpc_data['Lick'] = extract_event(file, file_info,
                                            boundaries['Y:'],
                                            boundaries['Z:'])
-        medpc_data['IPI'] = extract_event(file_info,
+        medpc_data['IPI'] = extract_event(file, file_info,
                                           boundaries['U:'],
                                           boundaries['W:'])
 
@@ -85,7 +92,7 @@ def create_session_dictionary(file):
             """
             medpc_data['Variance'] = 'N/A'
         elif 'fr5' in protocol and boundaries['F:']:
-            medpc_data['Variance'] = extract_event(file_info,
+            medpc_data['Variance'] = extract_event(file, file_info,
                                                    boundaries['F:'],
                                                    boundaries['G:'])
 
@@ -167,5 +174,7 @@ def discard_day(master_df, discard_list):
 
 if __name__ == '__main__':
     mice = [i for i in range(4386, 4414)]
-    file_dir = input('File directory: ')
+    file = '/Users/emma-fuze-grace/Lab/Medpc Data/2022-02-24_13h35m_Subject 4407.txt'
+    file_dir = '/Users/emma-fuze-grace/Lab/Medpc Data'
+    d = create_session_dictionary(file)
     master_df = create_medpc_master(mice, file_dir)
