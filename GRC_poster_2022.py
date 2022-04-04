@@ -25,6 +25,21 @@ from create_medpc_master import create_medpc_master
 ###############################################################################
 # Load data
 ###############################################################################
+Males=[4217,4218,4219,4220,
+      4221,4222,4223,4224,
+      4225,4226,4227,4228,
+      4229,4396,4397,
+      4398,4399,4400,
+      4406,4407,4408,4409,
+      4410,4411,4412,4413]
+Females=[4230,4231,4232,
+        4233,4234,4235,4236,
+        4237,4238,4239,4240,
+        4241,4242,4243,4244,
+        4386,4387,4388,4389,
+        4390,4391,4392,4393,
+        4394,4395,4401,
+        4402,4403,4404,4405]
 
 mice=[4217,4218,4219,4220,
       4221,4222,4223,4224,
@@ -313,6 +328,8 @@ All_rewards_FR5=[]
 All_rewards_Var5=[]
 All_rewards_CATEG=[]
 for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    if mouse in Females:
+        continue
     mouse_protocols=[]
     mouse_df=master_df[master_df['Mouse']==mouse]
     mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
@@ -399,6 +416,8 @@ All_rewards_FR5=[]
 All_rewards_Var5=[]
 All_rewards_CATEG=[]
 for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    if mouse in Males:
+        continue
     mouse_protocols=[]
     mouse_df=master_df[master_df['Mouse']==mouse]
     mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
@@ -718,6 +737,8 @@ All_seq_IPIs=[]
 All_rest_IPIs=[]
 counter=0
 for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    if mouse in Males:
+        continue
     mouse_protocols=[]
     mouse_df=master_df[master_df['Mouse']==mouse]
     mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
@@ -725,8 +746,8 @@ for j,mouse in enumerate(np.unique(master_df['Mouse'])):
     mouse_heatmap_rest=np.zeros((40,15))
     seq_day_IPIs=[]
     rest_day_IPIs=[]
-    #if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5': #'MC_magbase_ForcedReward_LongWinVarTarget_FR5'
-    if mouse_df['Protocol'].values[0]not in ['MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5','MC_magbase_ForcedReward_LongWinVarTarget_FR5'   ]: 
+    if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5': #'MC_magbase_ForcedReward_LongWinVarTarget_FR5'
+    #if mouse_df['Protocol'].values[0]not in ['MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5','MC_magbase_ForcedReward_LongWinVarTarget_FR5'   ]: 
         for i,date in enumerate(np.unique(mouse_df['Date'])):
             date_df=mouse_df[mouse_df['Date']==date]
             IPIs=np.array(date_df['IPI'].values[0])
@@ -1107,6 +1128,8 @@ fig,ax=plt.subplots(1,1,figsize=(10,5))
 plt.sca(ax)
 All_Variance=np.empty((len(mice), 15))
 for i,mouse in enumerate(mice):
+    if mouse in Males:
+        continue
     mouse_df = master_df[master_df['Mouse']==mouse].reset_index()
     mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
     Variance=mouse_df['Variance'].values
@@ -1403,3 +1426,863 @@ for j,mouse in enumerate(test_mice):
 # PART 4: MAGNET
 ############################################################################### 
 
+###############################################################################
+# PART 5: NoLight, NoForcedReward, Neither
+############################################################################### 
+
+###############################################################################
+# Load data
+###############################################################################
+
+mice=[4217,4218,4219,4220,
+      4221,4222,4223,4224,
+      4225,4226,4227,4228,
+      4229,4230,4231,4232,
+      4233,4234,4235,4236,
+      4237,4238,4239,4240,
+      4241,4242,4243,4244,
+      4386,4387,4388,4389,
+      4390,4391,4392,4393,
+      4394,4395,4396,4397,
+      4398,4399,4400,4401,
+      4402,4403,4404,4405,
+      4406,4407,4408,4409,
+      4410,4411,4412,4413, 
+      4667,4668,4669,4670,
+      4671,4672,4673,4674,
+      4675,4676,4677,4678,4679,
+      4680,4681,4682,4683,
+      4684,4685,4686,4687,
+      4688,4689,4690,4691,
+      4692,4693, 4694] 
+file_dir='G:/Behavior study Dec2021/All medpc together'
+master_df = create_medpc_master(mice, file_dir)
+
+#drop mouse/days based on google doc notes
+discard_list=[
+[4240, '20220120'], #wrong mouse run
+[4388, '20220208'], #wrong protocol
+[4388, '20220209'], #wrong protocol
+[4393, '20220209'], #wrong protocol
+[4394, '20220209'], #wrong protocol
+[4398, '20220208'], #wrong protocol
+[4398, '20220209'], #wrong protocol
+[4401, '20220209'], #wrong protocol
+[4403, '20220209'], #wrong protocol
+[4405, '20220208'], #wrong protocol
+[4405, '20220209'], #wrong protocol
+[4394, '20220211'], #wrong protocol
+[4225, '20211204'], #protocol was not capturing Vaiance yet
+[4234, '20211204'], #wrong protocol
+[4668, '20220317'], #wrong protocol
+]
+master_df = discard_day(master_df, discard_list)
+
+#drop mice doing Variance targetted
+discard_list=[
+    4217,4219,4220,4223,
+    4227,4228,4231,4234,
+    4235,4236,4238,4239,
+    4241,4392,4393,
+    4394,4395,4401,
+    4402,4403,4404,4405,4407,4408,4409,
+    4410,4411,4412,4413, 4673,4674,
+    4675,4676,4677,4678,4679,
+    4680,4681, 4688,4689,4690,4691,
+    4692,4693, 4694]
+master_df=discard_mice(master_df, discard_list)
+
+#drop mice based on google spreadsheet
+discard_list=[4683 ,4691,4694]
+master_df=discard_mice(master_df, discard_list)
+
+#drop the extra test training done on a subset of animals
+mice=[4219,4224,4225,4226,4222,4230,4231,4239,4234,4240,4241,4229]
+dates=['20220118','20220120','20220121','20220124','20220125','20220126','20220127','20220128','20220130','20220131','20220201']
+for mouse in mice:
+    for date in dates:
+        master_df = discard_day(master_df, [[mouse,date]])
+
+#starting dataset:
+len(np.unique(master_df['Mouse']))#44
+mice=np.unique(master_df['Mouse'])
+backup=master_df.copy()
+###############################################################################
+# plots that will decide which mice are included
+###############################################################################
+def Cumulative(lists):
+    cu_list = []
+    length = len(lists)
+    cu_list = [sum(lists[0:x:1]) for x in range(0, length+1)]
+    return cu_list[1:]
+
+#Make reward vs days plot and generate All_rewards, All_protocols
+All_rewards=np.zeros((len(np.unique(master_df['Mouse'])), 20)) #
+All_protocols=[]
+for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    mouse_protocols=[]
+    mouse_df=master_df[master_df['Mouse']==mouse]
+    mouse_rewards=np.zeros((1,len(np.unique(mouse_df['Date']))))[0]
+    for i,date in enumerate(np.unique(mouse_df['Date'])):
+        date_df=mouse_df[mouse_df['Date']==date]
+        try:
+            if math.isnan(sum(sum(date_df['Reward'].values))):
+                mouse_rewards[i] = 0
+            else:
+                mouse_rewards[i] = len(date_df['Reward'].values[0])
+        except:
+            #mouse_rewards[i] = len(date_df['Reward'].values[0])
+            print('Error in reward column:' + f'{mouse}' + date)
+        if mouse==4241 and date=='20220130':
+            continue
+        try :
+            len(date_df['Reward'].values[0])>1 #will fail if Nan
+            mouse_rewards[i]=len(date_df['Reward'].values[0]) 
+        except:
+            mouse_rewards[i]=0
+            print(mouse)
+            print(date)
+            
+        mouse_protocols.append(date_df['Protocol'].values)
+    while len(mouse_rewards)<20:
+        mouse_rewards=np.append(mouse_rewards,float('nan'))
+    print(mouse)
+    print(mouse_rewards)
+    All_rewards[j,:]=mouse_rewards
+    All_protocols.append(mouse_protocols)
+    
+fig,ax=plt.subplots(1,1)
+plt.plot(All_rewards.transpose(), color='k', alpha=0.5)
+
+# Number of days on FR1
+Time_on_FR1_FR5=[]
+Time_on_FR1_noLight=[]
+Time_on_FR1_noForcedR=[]
+Time_on_FR1_neither=[]
+for mouse,mouse_data, mouse_protocols in zip(mice,All_rewards, All_protocols):
+    try:
+        mask=[i for i,x in enumerate(mouse_protocols) if 'FR1' in x[0]]
+    except:
+        print('Mask problem: ' + f'{mouse}')
+    if mouse_protocols[-1][0] == 'MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLight':
+        Time_on_FR1_noLight.append(len(mask))
+    elif mouse_protocols[-1][0] == 'MC_magbase_ForcedReward_LongWinVarTarget_FR5_noForcedR':
+        Time_on_FR1_noForcedR.append(len(mask))
+    elif mouse_protocols[-1][0] == 'MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLightnoForcedR':
+        Time_on_FR1_neither.append(len(mask))
+    else:
+        Time_on_FR1_FR5.append(len(mask))
+fig,ax=plt.subplots(1,1)
+plt.hist([Time_on_FR1_FR5, Time_on_FR1_noLight, Time_on_FR1_noForcedR, Time_on_FR1_neither],stacked=True, bins=10)
+
+# colors=[]
+# discard_list=[]
+# for each,mouse in zip(Time_on_FR1, np.unique(master_df['Mouse'])):
+#     if each>5:
+#         colors.append('r')
+#         discard_list.append(mouse)
+#     else:
+#         colors.append('k')
+
+# Number of days on FR5
+Time_on_FR5=[]
+for mouse,mouse_data, mouse_protocols in zip(mice,All_rewards, All_protocols):
+    try:
+        mask=[i for i,x in enumerate(mouse_protocols) if 'FR5' in x[0]]
+    except:
+        print('Mask problem: ' + f'{mouse}')
+    Time_on_FR5.append(len(mask))
+fig,ax=plt.subplots(1,1)
+plt.hist(Time_on_FR5, bins=30)
+
+
+colors=[]
+discard_list=[]
+for each,mouse in zip(Time_on_FR5, np.unique(master_df['Mouse'])):
+    if each<7:
+        colors.append('r')
+        discard_list.append(mouse)
+    else:
+        colors.append('k')
+# Number of days on FR5 vs FR1 (obvious)
+fig,ax=plt.subplots(1,1)
+plt.scatter(Time_on_FR1,Time_on_FR5, c=colors)
+
+#DISCARD based on number of days available for analysis
+master_df=discard_mice(master_df, discard_list)
+keep_index=[i for i,x in enumerate(mice) if x not in discard_list]
+#New dataset:
+len(np.unique(master_df['Mouse']))#24
+mice=np.unique(master_df['Mouse'])
+All_rewards=All_rewards[keep_index]
+All_protocols=[All_protocols[i] for i in keep_index]
+
+
+###############################################################################
+# reward rate
+###############################################################################
+fig,ax=plt.subplots(1,1)
+
+All_rewards_FR5=[]
+All_rewards_noLight=[]
+All_rewards_noForcedR=[]
+All_rewards_neither=[]
+for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    mouse_protocols=[]
+    mouse_df=master_df[master_df['Mouse']==mouse]
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+    mouse_rewards=[]
+    for i,date in enumerate(np.unique(mouse_df['Date'])):
+        date_df=mouse_df[mouse_df['Date']==date]
+        # if math.isnan(sum(sum(date_df['Reward'].values))):
+        #     mouse_rewards[i]=0
+        # else:
+        mouse_rewards.append(len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60)) #divide by the last reward timestamps to et the rate
+    while len(mouse_rewards)<15:
+        mouse_rewards.append(float('nan'))
+    if date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
+        plt.plot(mouse_rewards, linestyle='dotted', color='k')
+        All_rewards_FR5.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLightnoForcedR':
+        plt.plot(mouse_rewards, linestyle='dotted', color='tomato')
+        All_rewards_neither.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLight':
+        plt.plot(mouse_rewards, linestyle='dotted', color='green')
+        All_rewards_noLight.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noForcedR':
+        plt.plot(mouse_rewards, linestyle='dotted', color='cornflowerblue')
+        All_rewards_noForcedR.append(mouse_rewards)
+
+
+step=0
+meanFR5=[]
+semFR5=[]
+while All_rewards_FR5:
+    step_values=[x[step] for x in All_rewards_FR5]
+    step_length=len(step_values)
+    meanFR5.append(np.nanmean(step_values))
+    semFR5.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_FR5=[x[1:] for x in All_rewards_FR5]
+    All_rewards_FR5=[x for x in All_rewards_FR5 if np.nansum(x)>0]
+    
+step=0
+mean_noLight=[]
+sem_noLight=[]
+while All_rewards_noLight:
+    step_values=[x[step] for x in All_rewards_noLight]
+    step_length=len(step_values)
+    mean_noLight.append(np.nanmean(step_values))
+    sem_noLight.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_noLight=[x[1:] for x in All_rewards_noLight]
+    All_rewards_noLight=[x for x in All_rewards_noLight if np.nansum(x)>0]
+
+step=0
+mean_noForcedR=[]
+sem_noForcedR=[]
+while All_rewards_noForcedR:
+    step_values=[x[step] for x in All_rewards_noForcedR]
+    step_length=len(step_values)
+    mean_noForcedR.append(np.nanmean(step_values))
+    sem_noForcedR.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_noForcedR=[x[1:] for x in All_rewards_noForcedR]
+    All_rewards_noForcedR=[x for x in All_rewards_noForcedR if np.nansum(x)>0]
+    
+step=0
+mean_neither=[]
+sem_neither=[]
+while All_rewards_neither:
+    step_values=[x[step] for x in All_rewards_neither]
+    step_length=len(step_values)
+    mean_neither.append(np.nanmean(step_values))
+    sem_neither.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_neither=[x[1:] for x in All_rewards_neither]
+    All_rewards_neither=[x for x in All_rewards_neither if np.nansum(x)>0]
+    
+plt.plot(meanFR5, linewidth=2, color='k')
+plt.vlines(range(len(meanFR5)), [a-b for a,b in zip(meanFR5,semFR5)], [a+b for a,b in zip(meanFR5,semFR5)], colors='k', linewidths=2) 
+plt.plot(mean_noLight, linewidth=2, color='green')
+plt.vlines(range(len(mean_noLight)), [a-b for a,b in zip(mean_noLight,sem_noLight)], [a+b for a,b in zip(mean_noLight,sem_noLight)], colors='green', linewidths=2) 
+plt.plot(mean_noForcedR, linewidth=2, color='cornflowerblue')
+plt.vlines(range(len(mean_noForcedR)), [a-b for a,b in zip(mean_noForcedR,sem_noForcedR)], [a+b for a,b in zip(mean_noForcedR,sem_noForcedR)], colors='cornflowerblue', linewidths=2) 
+plt.plot(mean_neither, linewidth=2, color='tomato')
+plt.vlines(range(len(mean_neither)), [a-b for a,b in zip(mean_neither,sem_neither)], [a+b for a,b in zip(mean_neither,sem_neither)], colors='tomato', linewidths=2) 
+
+#plt.vlines(3.5,0,6, color='k', linestyle='dashed')
+plt.xlabel('Time from first FR5 session (day)', size=16)
+plt.xticks(fontsize=14)
+plt.ylabel('Reward rate (#/min)', size=16)
+plt.yticks(fontsize=14)
+plt.legend(['FR5, N=12 mice', 'noLight, N=4 mice', 'noForcedR, N=4 mice', 'neither, N=4 mice'], loc='upper left')
+leg = ax.get_legend()
+leg.legendHandles[0].set_color('k')
+leg.legendHandles[1].set_color('green')
+leg.legendHandles[2].set_color('cornflowerblue')
+leg.legendHandles[3].set_color('tomato')
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+
+###############################################################################
+# LP rate
+###############################################################################
+fig,ax=plt.subplots(1,1, figsize=(8,5))
+
+All_rewards_FR5=[]
+All_rewards_noLight=[]
+All_rewards_noForcedR=[]
+All_rewards_neither=[]
+for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    mouse_protocols=[]
+    mouse_df=master_df[master_df['Mouse']==mouse]
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+    mouse_rewards=[]
+    for i,date in enumerate(np.unique(mouse_df['Date'])[:10]):
+        date_df=mouse_df[mouse_df['Date']==date]
+
+        # mouse_rewards.append(len(date_df['Lever'].values[0]) / (date_df['Lever'].values[0][-1]/60)) #divide by the last reward timestamps to et the rate
+        mouse_rewards.append(sum([x<1800 for x in date_df['Lever'].values[0]]) /1800*60) #divide by the last reward timestamps to et the rate
+    while len(mouse_rewards)<15:
+        mouse_rewards.append(float('nan'))
+    if date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
+        # plt.plot(mouse_rewards, linestyle='dotted', color='k', alpha=0.2)
+        All_rewards_FR5.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLightnoForcedR':
+        plt.plot(mouse_rewards, linestyle='dotted', color='tomato', alpha=0.2)
+        All_rewards_neither.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLight':
+        plt.plot(mouse_rewards, linestyle='dotted', color='green', alpha=0.2)
+        All_rewards_noLight.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noForcedR':
+        plt.plot(mouse_rewards, linestyle='dotted', color='cornflowerblue', alpha=0.2)
+        All_rewards_noForcedR.append(mouse_rewards)
+
+
+step=0
+meanFR5=[]
+semFR5=[]
+while All_rewards_FR5:
+    step_values=[x[step] for x in All_rewards_FR5]
+    step_length=len(step_values)
+    meanFR5.append(np.nanmean(step_values))
+    semFR5.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_FR5=[x[1:] for x in All_rewards_FR5]
+    All_rewards_FR5=[x for x in All_rewards_FR5 if np.nansum(x)>0]
+    
+step=0
+mean_noLight=[]
+sem_noLight=[]
+while All_rewards_noLight:
+    step_values=[x[step] for x in All_rewards_noLight]
+    step_length=len(step_values)
+    mean_noLight.append(np.nanmean(step_values))
+    sem_noLight.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_noLight=[x[1:] for x in All_rewards_noLight]
+    All_rewards_noLight=[x for x in All_rewards_noLight if np.nansum(x)>0]
+
+step=0
+mean_noForcedR=[]
+sem_noForcedR=[]
+while All_rewards_noForcedR:
+    step_values=[x[step] for x in All_rewards_noForcedR]
+    step_length=len(step_values)
+    mean_noForcedR.append(np.nanmean(step_values))
+    sem_noForcedR.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_noForcedR=[x[1:] for x in All_rewards_noForcedR]
+    All_rewards_noForcedR=[x for x in All_rewards_noForcedR if np.nansum(x)>0]
+    
+step=0
+mean_neither=[]
+sem_neither=[]
+while All_rewards_neither:
+    step_values=[x[step] for x in All_rewards_neither]
+    step_length=len(step_values)
+    mean_neither.append(np.nanmean(step_values))
+    sem_neither.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_neither=[x[1:] for x in All_rewards_neither]
+    All_rewards_neither=[x for x in All_rewards_neither if np.nansum(x)>0]
+    
+# plt.plot(meanFR5, linewidth=2, color='k')
+# plt.vlines(range(len(meanFR5)), [a-b for a,b in zip(meanFR5,semFR5)], [a+b for a,b in zip(meanFR5,semFR5)], colors='k', linewidths=2) 
+plt.plot(mean_noLight, linewidth=2, color='green')
+plt.vlines(range(len(mean_noLight)), [a-b for a,b in zip(mean_noLight,sem_noLight)], [a+b for a,b in zip(mean_noLight,sem_noLight)], colors='green', linewidths=2) 
+plt.plot(mean_noForcedR, linewidth=2, color='cornflowerblue')
+plt.vlines(range(len(mean_noForcedR)), [a-b for a,b in zip(mean_noForcedR,sem_noForcedR)], [a+b for a,b in zip(mean_noForcedR,sem_noForcedR)], colors='cornflowerblue', linewidths=2) 
+plt.plot(mean_neither, linewidth=2, color='tomato')
+plt.vlines(range(len(mean_neither)), [a-b for a,b in zip(mean_neither,sem_neither)], [a+b for a,b in zip(mean_neither,sem_neither)], colors='tomato', linewidths=2) 
+
+#plt.vlines(3.5,0,6, color='k', linestyle='dashed')
+plt.xlabel('Time from first FR5 session (day)', size=16)
+plt.xticks(fontsize=14)
+plt.ylabel('Lever press rate (#/min)', size=16)
+plt.yticks(fontsize=14)
+plt.legend(['FR5, N=12 mice', 'noLight, N=7 mice', 'noForcedR, N=8 mice', 'neither, N=8 mice'], loc='upper left')
+leg = ax.get_legend()
+leg.legendHandles[0].set_color('k')
+leg.legendHandles[1].set_color('green')
+leg.legendHandles[2].set_color('cornflowerblue')
+leg.legendHandles[3].set_color('tomato')
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+
+###############################################################################
+# LP rate vs Reward rate
+###############################################################################
+fig,ax=plt.subplots(1,1)
+
+for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    mouse_protocols=[]
+    mouse_df=master_df[master_df['Mouse']==mouse]
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+    mouse_rewards=[]
+    mouse_LPs=[]
+    for i,date in enumerate(np.unique(mouse_df['Date'])):
+        date_df=mouse_df[mouse_df['Date']==date]
+        # if math.isnan(sum(sum(date_df['Reward'].values))):
+        #     mouse_rewards[i]=0
+        # else:
+        mouse_LPs.append(len(date_df['Lever'].values[0]) / (date_df['Lever'].values[0][-1]/60)) #divide by the last reward timestamps to et the rate
+        mouse_rewards.append(len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60)) #divide by the last reward timestamps to et the rate
+  
+
+    if date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
+        plt.scatter(mouse_LPs,mouse_rewards, linestyle='dotted', color='k')
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLightnoForcedR':
+        plt.scatter(mouse_LPs,mouse_rewards, linestyle='dotted', color='tomato')
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLight':
+        plt.scatter(mouse_LPs,mouse_rewards, linestyle='dotted', color='green')
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noForcedR':
+        plt.scatter(mouse_LPs,mouse_rewards, linestyle='dotted', color='cornflowerblue')
+
+
+#plt.vlines(3.5,0,6, color='k', linestyle='dashed')
+plt.xlabel('Time from first FR5 session (day)', size=16)
+plt.xticks(fontsize=14)
+plt.ylabel('Reward rate (#/min)', size=16)
+plt.yticks(fontsize=14)
+plt.legend(['FR5, N=12 mice', 'noLight, N=4 mice', 'noForcedR, N=4 mice', 'neither, N=4 mice'], loc='upper left')
+leg = ax.get_legend()
+leg.legendHandles[0].set_color('k')
+leg.legendHandles[1].set_color('green')
+leg.legendHandles[2].set_color('cornflowerblue')
+leg.legendHandles[3].set_color('tomato')
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+
+# #Questions: 
+#     - Do they learn faster? (Days on FR1)
+#     - Do they produce sequences of 5? (IPIs, extra presses (for light only), COllect in_between sequence (for noForced and neither))
+
+###############################################################################
+# Number of extra presses across days (maybe not that useful)
+###############################################################################
+fig,ax=plt.subplots(1,1)
+
+All_rewards_FR=[]
+All_rewards_noLight=[]
+All_rewards_noForcedR=[]
+All_rewards_neither=[]
+for j,mouse in enumerate(np.unique(master_df['Mouse'])):
+    mouse_protocols=[]
+    mouse_df=master_df[master_df['Mouse']==mouse]
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+    mouse_rewards=np.zeros((1,10))[0]
+    
+    #First days
+    for i,date in enumerate(np.unique(mouse_df['Date'])[:10]):
+        date_df=mouse_df[mouse_df['Date']==date]
+        # if math.isnan(sum(sum(date_df['Lever'].values))):
+        #     mouse_rewards[i]=0
+        # else:
+        relevant_presses=len(date_df['Reward'].values[0])*5
+        total_presses=len(date_df['Lever'].values[0])
+        extra_presses=total_presses-relevant_presses
+        extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
+        mouse_rewards[i]=extra_press_per_seq 
+        
+    if date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
+        plt.plot(mouse_rewards, linestyle='dotted', color='k')
+        All_rewards_FR5.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLightnoForcedR':
+        plt.plot(mouse_rewards, linestyle='dotted', color='tomato')
+        All_rewards_neither.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noLight':
+        plt.plot(mouse_rewards, linestyle='dotted', color='green')
+        All_rewards_noLight.append(mouse_rewards)
+    elif date_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5_noForcedR':
+        plt.plot(mouse_rewards, linestyle='dotted', color='cornflowerblue')
+        All_rewards_noForcedR.append(mouse_rewards)       
+   
+
+step=0
+meanFR5=[]
+semFR5=[]
+while All_rewards_FR5:
+    step_values=[x[step] for x in All_rewards_FR5]
+    step_length=len(step_values)
+    meanFR5.append(np.nanmean(step_values))
+    semFR5.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_FR5=[x[1:] for x in All_rewards_FR5]
+    All_rewards_FR5=[x for x in All_rewards_FR5 if np.nansum(x)>0]
+    
+step=0
+mean_noLight=[]
+sem_noLight=[]
+while All_rewards_noLight:
+    step_values=[x[step] for x in All_rewards_noLight]
+    step_length=len(step_values)
+    mean_noLight.append(np.nanmean(step_values))
+    sem_noLight.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_noLight=[x[1:] for x in All_rewards_noLight]
+    All_rewards_noLight=[x for x in All_rewards_noLight if np.nansum(x)>0]
+
+step=0
+mean_noForcedR=[]
+sem_noForcedR=[]
+while All_rewards_noForcedR:
+    step_values=[x[step] for x in All_rewards_noForcedR]
+    step_length=len(step_values)
+    mean_noForcedR.append(np.nanmean(step_values))
+    sem_noForcedR.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_noForcedR=[x[1:] for x in All_rewards_noForcedR]
+    All_rewards_noForcedR=[x for x in All_rewards_noForcedR if np.nansum(x)>0]
+    
+step=0
+mean_neither=[]
+sem_neither=[]
+while All_rewards_neither:
+    step_values=[x[step] for x in All_rewards_neither]
+    step_length=len(step_values)
+    mean_neither.append(np.nanmean(step_values))
+    sem_neither.append(np.nanstd(step_values)/np.sqrt(step_length))
+    All_rewards_neither=[x[1:] for x in All_rewards_neither]
+    All_rewards_neither=[x for x in All_rewards_neither if np.nansum(x)>0]
+    
+plt.plot(meanFR5, linewidth=2, color='k')
+plt.vlines(range(len(meanFR5)), [a-b for a,b in zip(meanFR5,semFR5)], [a+b for a,b in zip(meanFR5,semFR5)], colors='k', linewidths=2) 
+plt.plot(mean_noLight, linewidth=2, color='green')
+plt.vlines(range(len(mean_noLight)), [a-b for a,b in zip(mean_noLight,sem_noLight)], [a+b for a,b in zip(mean_noLight,sem_noLight)], colors='green', linewidths=2) 
+plt.plot(mean_noForcedR, linewidth=2, color='cornflowerblue')
+plt.vlines(range(len(mean_noForcedR)), [a-b for a,b in zip(mean_noForcedR,sem_noForcedR)], [a+b for a,b in zip(mean_noForcedR,sem_noForcedR)], colors='cornflowerblue', linewidths=2) 
+plt.plot(mean_neither, linewidth=2, color='tomato')
+plt.vlines(range(len(mean_neither)), [a-b for a,b in zip(mean_neither,sem_neither)], [a+b for a,b in zip(mean_neither,sem_neither)], colors='tomato', linewidths=2) 
+plt.yscale('log')
+#plt.vlines(3.5,-5,2, color='k', linestyle='dashed')
+plt.xlabel('Time from first FR5 session (day)', size=16)
+plt.xticks(fontsize=14)
+plt.ylabel('log(extraLP/reward)', size=16)
+plt.yticks(fontsize=14)
+plt.legend(['FR5, N=9 mice', 'Var, N=11 mice', 'CATEG, N=15 mice'], loc='upper left')
+leg = ax.get_legend()
+leg.legendHandles[0].set_color('tomato')
+leg.legendHandles[1].set_color('cornflowerblue')
+leg.legendHandles[2].set_color('green')
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+plt.show()
+
+###############################################################################
+# IPI distribution
+###############################################################################
+
+
+test_mice=[4386,4387,4396,4397, 4667,4668,4682] #noLight
+test_mice=[4388,4389,4398,4399, 4669,4670,4684,4685] #noForcedR
+test_mice=[4390,4391,4400,4406, 4671,4672,4686,4687] #noLightnoForcedR
+
+for j,mouse in enumerate(test_mice):
+    fig,ax=plt.subplots(1,1, figsize=(5,10))
+    mouse_protocols=[]
+    mouse_df=master_df[master_df['Mouse']==mouse]
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+    mouse_heatmap_seq=np.zeros((40,15))
+    mouse_heatmap_rest=np.zeros((40,15))
+    seq_day_mean=[]
+    rest_day_mean=[]
+    # if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
+    for i,date in enumerate(np.unique(mouse_df['Date'])):
+        date_df=mouse_df[mouse_df['Date']==date]
+        IPIs=np.array(date_df['IPI'].values[0])
+        #find the index of 5 presses preceding each reward
+        rewards=date_df['Reward'].values[0]
+        LPs=np.array(date_df['Lever'].values[0])
+        indices=[]
+        for rwd in rewards:
+            LP_indices=np.where(LPs<=rwd)[0][-5:]
+            IPI_indices=LP_indices[1:]
+            indices.append(IPI_indices)
+        Seq_IPI_indices=[x for l in indices for x in l]
+        Rest_IPI_indices=[i for i in range(len(IPIs)) if i not in Seq_IPI_indices][1:]#dont count the first item, it's a zero
+        Seq_IPIs=IPIs[np.array(Seq_IPI_indices)]
+        Rest_IPIs=IPIs[np.array(Rest_IPI_indices)]
+        
+        seq_day_mean.append(np.log10(np.median(Seq_IPIs)))
+        rest_day_mean.append(np.log10(np.median(Rest_IPIs)))
+
+        seq_data,edges=np.histogram(np.log10(Seq_IPIs), bins=40, range=(-1,3), density=True)
+        rest_data,edges=np.histogram(np.log10(Rest_IPIs), bins=40,  range=(-1,3), density=True)
+        
+        mouse_heatmap_seq[:,i]=seq_data
+        mouse_heatmap_rest[:,i]=rest_data
+        
+    # #convert to RGB
+    # blue_mouse_heatmap_seq=np.zeros((50,10,3))
+    # blue_mouse_heatmap_seq[:,:,0]=mouse_heatmap_seq/np.max(mouse_heatmap_seq)
+    # blue_mouse_heatmap_seq[:,:,1]=mouse_heatmap_seq/np.max(mouse_heatmap_seq)
+    # #blue_mouse_heatmap_seq=1-blue_mouse_heatmap_seq
+    # red_mouse_heatmap_rest=np.zeros((50,10,3))
+    # red_mouse_heatmap_rest[:,:,1]=mouse_heatmap_rest/np.max(mouse_heatmap_rest)
+    # red_mouse_heatmap_rest[:,:,2]=mouse_heatmap_rest/np.max(mouse_heatmap_rest)
+    # #red_mouse_heatmap_rest=1-red_mouse_heatmap_rest
+    
+    # combined_mouse_heatmap=np.add(blue_mouse_heatmap_seq, red_mouse_heatmap_rest)/2
+    # combined_mouse_heatmap=1-combined_mouse_heatmap
+    # # mask=np.sum(combined_mouse_heatmap, axis=2)==0
+    # # combined_mouse_heatmap[mask]=np.array([1,1,1])
+    # plt.imshow(combined_mouse_heatmap)
+    
+    plt.imshow(mouse_heatmap_rest, alpha=0.5, cmap='Blues')
+    plt.imshow(mouse_heatmap_seq, alpha=0.5, cmap='Reds')
+    plt.plot([x*10+10 for x in seq_day_mean], color='r') #10=40(bins)/(3-(-1)) (range) +10 (origin=-1) (histogram adjustements)
+    plt.plot([x*10+10 for x in rest_day_mean], color='b') #10=40(bins)/(3-(-1)) (range) +10 (origin=-1) (histogram adjustements)
+    plt.title(str(mouse)+np.unique(mouse_df['Protocol'])[-1])
+    plt.ylabel('IPI (s)')
+    log_values=[float(x) for x in edges[[0,10,20,30,40]]]
+    plt.yticks([0,10,20,30,40],[str(10**x) for x in log_values])
+    plt.xlabel('Sessions (#)')
+    fig,[ax1, ax2]=plt.subplots(2,1, figsize=(5,10))
+    ax1.bar(edges[1:],mouse_heatmap_seq[:,0], alpha=0.5, color='r', width=0.1)
+    ax1.bar(edges[1:],mouse_heatmap_rest[:,0],  alpha=0.5,  color='b', width=0.1)
+    ax1.set_xticks(edges[[0,10,20,30,40]],[str(10**x) for x in log_values])
+    ax2.bar(edges[1:],mouse_heatmap_seq[:,9],  alpha=0.5,  color='r', width=0.1)
+    ax2.bar(edges[1:],mouse_heatmap_rest[:,9], alpha=0.5,  color='b', width=0.1)
+    ax2.set_xticks(edges[[0,10,20,30,40]],[str(10**x) for x in log_values])
+    ax2.set_xlabel('IPI (s)')
+ 
+###############################################################################
+# within sequence IPI  vs inter IPIs (summary plot: Delat inter-intra)
+###############################################################################
+fig,ax=plt.subplots(1,1,figsize=(8,5))
+Grouped_mice=[[4386,4387,4396,4397, 4667,4668,4682], #noLight
+              [4388,4389,4398,4399, 4669,4670,4684,4685], #noForcedR
+              [4390,4391,4400,4406, 4671,4672,4686,4687]] #noLightnoForcedR
+colors=['green','cornflowerblue','tomato']
+for k,test_mice in enumerate(Grouped_mice):
+    Deltas=np.empty((len(test_mice), 10))
+    for j,mouse in enumerate(test_mice):
+        mouse_protocols=[]
+        mouse_df=master_df[master_df['Mouse']==mouse]
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+    
+        seq_day_mean=[]
+        rest_day_mean=[]
+        
+        # if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
+        for i,date in enumerate(np.unique(mouse_df['Date'])[:10]):
+            date_df=mouse_df[mouse_df['Date']==date]
+            IPIs=np.array(date_df['IPI'].values[0])
+            #find the index of 5 presses preceding each reward
+            rewards=date_df['Reward'].values[0]
+            LPs=np.array(date_df['Lever'].values[0])
+            indices=[]
+            for rwd in rewards:
+                LP_indices=np.where(LPs<=rwd)[0][-5:]
+                IPI_indices=LP_indices[1:]
+                indices.append(IPI_indices)
+            Seq_IPI_indices=[x for l in indices for x in l]
+            Rest_IPI_indices=[i for i in range(len(IPIs)) if i not in Seq_IPI_indices][1:]#dont count the first item, it's a zero
+            Seq_IPIs=IPIs[np.array(Seq_IPI_indices)]
+            Rest_IPIs=IPIs[np.array(Rest_IPI_indices)]
+            
+            seq_day_mean.append(np.log10(np.median(Seq_IPIs)))
+            rest_day_mean.append(np.log10(np.median(Rest_IPIs)))
+            
+        Deltas[j,:i+1]=[b-a for a,b in zip(seq_day_mean, rest_day_mean)]
+    mean_Delta=np.nanmean(Deltas, axis=0)
+    sem_Delta=np.nanstd(Deltas, axis=0)/np.sqrt(len(test_mice))
+    plt.plot(mean_Delta, color=colors[k], linewidth=2)
+    plt.vlines(range(len(mean_Delta)), [a-b for a,b in zip(mean_Delta,sem_Delta)], [a+b for a,b in zip(mean_Delta,sem_Delta)], color=colors[k], linewidths=2) 
+plt.xlabel('Time from first FR5 session (day)', size=16)
+plt.xticks(fontsize=14)
+plt.ylabel('interIPI - intraIPI (s)', size=16)
+plt.yticks(fontsize=14)
+plt.legend(['noLight, N=7 mice', 'noForcedR, N=8 mice', 'neither, N=8 mice'], loc='upper left')
+leg = ax.get_legend()
+leg.legendHandles[0].set_color('green')
+leg.legendHandles[1].set_color('cornflowerblue')
+leg.legendHandles[2].set_color('tomato')
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+###############################################################################
+# Number of presses while reward is sitting unconsumed
+# need to plot across days to see if at first they suck and naturally learn
+###############################################################################
+
+Grouped_mice=[[4386,4387,4396,4397, 4667,4668,4682], #noLight
+              [4388,4389,4398,4399, 4669,4670,4684,4685], #noForcedR
+              [4390,4391,4400,4406, 4671,4672,4686,4687]] #noLightnoForcedR
+All_collection_RT=[]
+All_extra_LP=[]
+for test_mice in Grouped_mice:
+    Group_collection_RT=[]
+    Group_extra_LP=[]
+    for j,mouse in enumerate(test_mice):
+        mouse_protocols=[]
+        mouse_df=master_df[master_df['Mouse']==mouse]
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+
+        mouse_rewards=np.zeros((1,10))[0]
+        Mouse_collection_RT=[]
+        Mouse_extra_LP=[]
+        #First days
+        for i,date in enumerate(np.unique(mouse_df['Date'])[:10]):
+            Collection_RT=[]
+            Extra_LPs=[]
+            date_df=mouse_df[mouse_df['Date']==date]
+            # if math.isnan(sum(sum(date_df['Lever'].values))):
+            #     mouse_rewards[i]=0
+            # else:
+            
+            #get reward
+            reward_times=np.asarray(date_df['Reward'].values[0])
+            lick_times=np.asarray(date_df['Lick'].values[0])
+            LP_times=np.asarray(date_df['Lever'].values[0])
+            for reward in reward_times:
+                #get the first lick following reward
+                try: 
+                    idx=np.where(lick_times>reward)[0][0]
+                except: 
+                    continue
+                first_lick=lick_times[idx]
+                Collection_RT.append(first_lick-reward)
+                #get LPs between reward delivery and fist lick
+                mask1=LP_times>reward
+                mask2=LP_times<first_lick
+                extra_LPs=np.sum(mask1&mask2)
+                Extra_LPs.append(extra_LPs)
+            relevant_presses=len(date_df['Reward'].values[0])*5
+            total_presses=len(date_df['Lever'].values[0])
+            extra_presses=total_presses-relevant_presses
+            extra_press_per_seq=extra_presses/len(date_df['Reward'].values[0])
+            mouse_rewards[i]=extra_press_per_seq 
+            Mouse_collection_RT.append(Collection_RT)
+            Mouse_extra_LP.append(Extra_LPs)
+        Group_collection_RT.append(Mouse_collection_RT)  
+        Group_extra_LP.append(Mouse_extra_LP)
+    All_collection_RT.append(Group_collection_RT)  
+    All_extra_LP.append(Group_extra_LP)
+
+fig,ax=plt.subplots(1,1,figsize=(8,5))
+colors=['green','cornflowerblue','tomato']
+for k ,(group_RTs, group_LPs) in enumerate(zip(All_collection_RT, All_extra_LP)):
+    step=0
+    mean_group=[]
+    sem_group=[]
+    while group_RTs:
+        step_values=[np.median(x[step]) for x in group_RTs]
+        step_length=len(step_values)
+        mean_group.append(np.nanmean(step_values))
+        print(np.nanmean(step_values))
+        
+        sem_group.append(np.nanstd(step_values)/np.sqrt(step_length))
+        group_RTs=[x[1:] for x in group_RTs]
+        group_RTs=[x for x in group_RTs if len(x)>0]
+       
+    plt.plot(mean_group,color=colors[k], linewidth=2)
+    plt.vlines(range(len(mean_group)), [a-b for a,b in zip(mean_group,sem_group)], [a+b for a,b in zip(mean_group,sem_group)], colors=colors[k], linewidths=2) 
+plt.xlabel('Time from first FR5 session (day)', size=16)
+plt.xticks(fontsize=14)
+plt.ylabel('reward collection delay (s)', size=16)
+plt.yticks(fontsize=14)
+plt.legend(['noLight, N=7 mice', 'noForcedR, N=8 mice', 'neither, N=8 mice'], loc='upper left')
+leg = ax.get_legend()
+leg.legendHandles[0].set_color('green')
+leg.legendHandles[1].set_color('cornflowerblue')
+leg.legendHandles[2].set_color('tomato')
+ax.spines['right'].set_visible(False)
+ax.spines['top'].set_visible(False)
+        
+        
+
+        
+for group_RTs, group_LPs in zip(All_collection_RT, All_extra_LP):
+    for RTs in group_RTs:
+        fig, ax=plt.subplots(1,1,figsize=(5,5))
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="5%", pad=0.05)
+        data = np.arange(1000, 0, -1).reshape(100, 10)
+        im = cax.imshow(data, cmap='magma')
+        plt.sca(cax)
+        plt.xticks([])
+        plt.yticks([99,1], ['First', 'Last'])
+        plt.xticks(visible=False)
+        plt.ylabel('Day')
+        
+        Cmap_index=np.linspace(0,1,len(RTs))
+        for i,R in enumerate(RTs):
+            Cum=stats.cumfreq(R, numbins=40, defaultreallimits=(0,20))
+            x= np.linspace(0, Cum.binsize*Cum.cumcount.size, Cum.cumcount.size)
+            x= np.insert([np.log(a+1) for a in x][1:], 0,0)
+            ax.plot(x,Cum.cumcount/np.size(R), color=cmap(Cmap_index[i]), linestyle='dotted') #color=cmap(Cmap_index[j])
+        
+           
+    
+    
+    plt.sca(ax)
+    
+        
+    
+    Xticks=[2,4,8,16,32,64,128]
+     plotting_x=[np.log(x) for x in Xticks]
+     plt.xticks(plotting_x, ['2','4','8','16','32','64','128'])
+     plt.xlabel('Sequence length (s)')
+     plt.ylabel('CDF')
+     ax.spines['right'].set_visible(False)
+     ax.spines['top'].set_visible(False)   
+     plt.title(mouse)
+     
+     
+     
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib import cm
+cmap = cm.get_cmap('magma', 12)
