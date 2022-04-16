@@ -27,7 +27,8 @@ class Old_Magnet():
     
     def __init__(self, magnet_file, session_df, mouse, date, process=False, 
                  keep=True, RAW_DF=None, smooth_df=None, bins=10,
-                 on_off_threshold=15, independent=5000,weird_last_press=False):
+                 on_threshold=15, independent=5000,weird_last_press=False,
+                 off_threshold=15):
         # Save hall sensor files and medpc df (from master_df)
         self.file = magnet_file
         self.session_df = session_df
@@ -57,7 +58,8 @@ class Old_Magnet():
         self.smooth()
         # Call other class functions to process data
         if process:
-            self.detect_magnet_ON_OFF(on_off_threshold)
+            self.detect_magnet_ON_OFF(on_threshold=on_threshold,
+                                      off_threshold=off_threshold)
             self.detect_press_boundaries()
             self.detect_first_last_press(weird_last_press)
             self.scale_medpc()
@@ -69,8 +71,8 @@ class Old_Magnet():
                 f'File: {self.file}\n'
                 f'Mouse: {self.mouse}\n' +
                 f'Date: {self.date}\n' +
-                f'Keep: {self.keep}\n'
-                f'Press Boundaries: {self.top, self.bottom}' + 
+                f'Keep: {self.keep}\n' + 
+                f'Press Boundaries: {(round(self.top), round(self.bottom))}\n' + 
                 f'LPs: {len(self.RAW_LPs)}'
             )
     
@@ -108,8 +110,8 @@ class Old_Magnet():
             plt.plot(self.scaled_rewards,
                 [self.top + 10 for _ in range(len(self.scaled_rewards))],
                 linestyle='--', marker='^', markersize=10, color='c')
-            plt.vlines(self.scaled_LPs, self.bottom, self.top, alpha=0.75,
-                       color ='k')
+            # plt.vlines(self.scaled_LPs, self.bottom, self.top, alpha=0.75,
+            #             color ='k')
             for ind, press in enumerate(self.scaled_LPs):
                 plt.text(press, self.top+7, f'{ind}',
                              fontsize=8)
@@ -141,15 +143,15 @@ class Old_Magnet():
                 if down and up:
                     # ind in np.ravel(self.in_seq_ind):
                     if ind % 2:
-                        color = 'm'
+                        plt.plot(t[down:up],m[down:up], color='m', 
+                                 linewidth=2, alpha = 0.75)
                     else:
-                        color = 'g'
-                    plt.plot(t[down:up],m[down:up], color=color, 
-                             linewidth=2, alpha = 0.75)
-                plt.text(t[down], m[down]+3, f'{ind} D',
-                             fontsize=8)
-                plt.text(t[up], m[up], f'{ind} U',
-                             fontsize=8)
+                        plt.plot(t[down:up],m[down:up], color='c', 
+                                 linewidth=3, alpha = 0.75)
+                # plt.text(t[down], m[down]+3, f'{ind} D',
+                #              fontsize=8)
+                # plt.text(t[up], m[up], f'{ind} U',
+                #              fontsize=8)
                     
                     
             
@@ -183,7 +185,7 @@ class Old_Magnet():
             plt.plot(cut_signal)
         
 
-    def detect_magnet_ON_OFF(self, on_off_threshold=15, plot=False):
+    def detect_magnet_ON_OFF(self, on_threshold=15, off_threshold=15, plot=False):
         """Find indices for when magnet turns on and off.
         Note: indices correspond to original, untruncated indexing scheme.
         """
@@ -193,7 +195,6 @@ class Old_Magnet():
             self.times < self.times[0] + 1000])
         magnet_off_std = np.std(
             self.magnet[self.times < self.times[0] + 1000])
-        threshold = on_off_threshold * magnet_off_std
     
         # Identify magnet onset
         ii = 1    #counter   
@@ -201,19 +202,22 @@ class Old_Magnet():
         beg_ind = 1
         #loop through data until you deflect from OFF to ON
         while not_found :
-            if (abs(self.magnet[ii] - magnet_off_median) > threshold) :
+            if (abs(self.magnet[ii] - magnet_off_median) > on_threshold * magnet_off_std) :
                 beg_ind = ii
                 not_found = False
             ii = ii + 1
 
-        # Identify magnet offset    
-        not_found = True
-        end_ind = beg_ind 
-        while not_found :#loop through data until you deflect from ON to OFF
-            if (abs(self.magnet[ii] - magnet_off_median) < threshold) :
-                end_ind = ii
-                not_found = False
-            ii = ii + 1
+        # Identify magnet offset 
+        if isinstance(off_threshold, int):
+            not_found = True
+            end_ind = beg_ind 
+            while not_found :#loop through data until you deflect from ON to OFF
+                if (abs(self.magnet[ii] - magnet_off_median) < off_threshold * magnet_off_std) :
+                    end_ind = ii
+                    not_found = False
+                ii = ii + 1
+        else:
+            end_ind = len(self.times) - 1
         
         # Save to Magnet object attributes
         self.beg_ind = beg_ind
@@ -241,7 +245,7 @@ class Old_Magnet():
         sorted_hist = sorted(zip(histogram[0], histogram[1]), reverse=True)
         sorted_hist = [item for item in sorted_hist if item[0] > 1000]
         sorted_hist = sorted(sorted_hist, key=lambda x:x[1], reverse=True)
-        print(sorted_hist)
+        # print(sorted_hist)
         top, bottom = sorted_hist[top_ind][1], sorted_hist[bottom_ind][1]
         
         # Save data
@@ -326,7 +330,9 @@ class Old_Magnet():
             curr_offset = percent * (self.top-self.bottom)
             move = 0.05 * (self.top-self.bottom)
             original_move = move
-            while (curr_target := curr_baseline - curr_offset) < curr_baseline:
+            
+            # Attempt #1
+            while (curr_target := curr_baseline - curr_offset) < curr_baseline-(2*move):
                 if plot:
                     plt.hlines(curr_target, t[search_start_ind], t[search_end_ind], color='k',
                                 label='target', linestyle ='--')
@@ -338,6 +344,7 @@ class Old_Magnet():
                     break
                 curr_offset -= move
                 
+            # Attempt #2
             if np.where(down_xings)[0].size == 0 and (np.where(up_xings)[0].size == 0):
                 curr_offset = percent * (self.top-self.bottom)
                 move = original_move
@@ -353,18 +360,42 @@ class Old_Magnet():
                         break
                     curr_offset += move
             
-            if np.where(down_xings)[0].size:
-                plt.gca().plot(t[np.where(down_xings)[0][0]], m[np.where(down_xings)[0][0]],
-                          color='k', markersize=3)
-            if np.where(up_xings)[0].size:
-                plt.gca().plot(t[np.where(up_xings)[0][0]], m[np.where(up_xings)[0][0]],
-                          color='k', markersize=3)
+            # Attempt #3
+            # Repeat in case still nothing found
+            # I need to make this code more efficient...
+            if np.where(down_xings)[0].size == 0 and (np.where(up_xings)[0].size == 0):
+                print(f'Extending baseline beyond search end: {ind}')
+                search_magnet = m[search_start_ind:search_end_ind + 500]
+                curr_baseline = baselines[ind]
+                curr_offset = percent * (self.top-self.bottom)
+                move = 0.05 * (self.top-self.bottom)
+                original_move = move
+                while (curr_target := curr_baseline - curr_offset) < curr_baseline:
+                    # print(curr_target, curr_offset)
+                    if plot:
+                        plt.hlines(curr_target, t[search_start_ind], t[search_end_ind + 500],
+                                    label='target', linestyle ='-',alpha=0.5,
+                                    color='r')
+                    bool_mask = search_magnet < curr_target 
+                    crossings = np.invert( bool_mask[:-1] == bool_mask[1:] )
+                    down_xings = np.invert(bool_mask[:-1]) & crossings # crossing and first is greater than threshold = going down
+                    up_xings = bool_mask[:-1] & crossings # crossing and first is less than threshold = going up
+                    if np.where(down_xings)[0].size > 0 or np.where(up_xings)[0].size > 0:
+                        break
+                    curr_offset -= move
+            if plot:
+                if np.where(down_xings)[0].size:
+                    plt.gca().plot(t[np.where(down_xings)[0][0]], m[np.where(down_xings)[0][0]],
+                              color='k', markersize=3)
+                if np.where(up_xings)[0].size:
+                    plt.gca().plot(t[np.where(up_xings)[0][0]], m[np.where(up_xings)[0][0]],
+                              color='k', markersize=3)
             thresholds[ind] = curr_target
         self.move = original_move
         self.thresholds = thresholds
             
     
-    def detect_press_ind(self, smooth=15, plot=True, search_offset=50,
+    def detect_press_ind(self, smooth=15, plot=True, down_offset=50, up_offset=50,
                          hill_start=50, hill_end=100, num_hill_checks=5):
         """"Main Search for press indices."""
         m, t, LPs, baselines = (self.magnet, self.times, self.scaled_LPs, 
@@ -384,18 +415,30 @@ class Old_Magnet():
                 next_press = t[-1]
             
             # Define search vector and look for crossings in that vector
+            searching = True
             search_times = t[(t > press) & (t < next_press)]
             search_start_ind = np.where(t == search_times[0])[0][0]
             search_end_ind = np.where(t == search_times[-1])[0][0]
-            search_magnet = m[search_start_ind:search_end_ind]
-            bool_mask = search_magnet < threshold
-            crossings = np.invert( bool_mask[:-1] == bool_mask[1:] )
-            down_xings = np.invert(bool_mask[:-1]) & crossings # crossing and first is greater than threshold = going down
-            up_xings = bool_mask[:-1] & crossings # crossing and first is less than threshold = going up
-            num_down = np.where(down_xings)[0].size
-            num_up = np.where(up_xings)[0].size
-            num_detected = num_down + num_up
-            down_choice, up_choice = 0, 0
+            while searching == True:
+                search_magnet = m[search_start_ind:search_end_ind]
+                bool_mask = search_magnet < threshold
+                crossings = np.invert( bool_mask[:-1] == bool_mask[1:] )
+                down_xings = np.invert(bool_mask[:-1]) & crossings # crossing and first is greater than threshold = going down
+                up_xings = bool_mask[:-1] & crossings # crossing and first is less than threshold = going up
+                num_down = np.where(down_xings)[0].size
+                num_up = np.where(up_xings)[0].size
+                num_detected = num_down + num_up
+                down_choice, up_choice = 0, 0
+                if num_detected > 0:
+                    searching = False
+                    break
+                search_end_ind += 25
+                print(ind, threshold)
+                print(num_down, num_up, num_detected)
+                if plot:
+                    plt.hlines(threshold, t[search_start_ind], t[search_end_ind + 500],
+                                linestyle ='-',alpha=0.5)
+                
             
             if self.weird_last_press and (ind == len(LPs) - 1):
                 down_crossing = search_start_ind + np.where(down_xings)[0][0]
@@ -416,13 +459,15 @@ class Old_Magnet():
                 if num_down:
                     down_crossing = search_start_ind + np.where(down_xings)[0][0]
                     down_choice, up_choice = (down_crossing,
-                                              search_end_ind + search_offset)
+                                              search_end_ind + up_offset)
                     if plot:
                         plt.plot(t[down_crossing], m[down_crossing],
                                  marker='o', color='k')
+                        plt.plot(t[up_choice], m[up_choice],
+                                 marker='*', color='r', markersize=10)
                 if num_up:
                     up_crossing = search_start_ind + np.where(up_xings)[0][0]
-                    down_choice, up_choice = (search_start_ind - search_offset,
+                    down_choice, up_choice = (search_start_ind - down_offset,
                                               up_crossing)
                     if plot: 
                         plt.plot(t[up_crossing], m[up_crossing],
@@ -436,17 +481,25 @@ class Old_Magnet():
                     # This is setup to detect the leftmost press detected
                     # If the previous up index has already been found in the search vector,
                     # then look for next press
-                    down_choice, up_choice = (search_start_ind - search_offset,
-                                              up_crossing)
+                    if up_crossing - search_start_ind < 100:
+                        down_choice, up_choice = (down_crossing,
+                                                  search_end_ind + up_offset)
+                        
+                    else:
+                        down_choice, up_choice = (search_start_ind - down_offset,
+                                                  up_crossing)
             elif num_detected > 2:
                 down_crossing = search_start_ind + np.where(down_xings)[0]
                 up_crossing = search_start_ind + np.where(up_xings)[0]
                 if down_crossing[0] < prev_up:
-                    final_down_idx, up_choice = prev_up, up_crossing[-1]
-                elif abs(search_end_ind - down_crossing[-1]) < 250:
-                    # Could indicate a second press detected
-                    down_choice, up_choice = (search_start_ind - search_offset,
-                                              up_crossing[0])
+                    if len(up_crossing) >= 2:
+                        final_down_idx, up_choice = prev_up, up_crossing[-1]
+                    else:
+                        final_down_idx, up_choice = prev_up, search_end_ind + up_offset
+                # elif search_end_ind - down_crossing[-1] < 250:
+                #     # Could indicate a second press detected
+                #     down_choice, up_choice = (search_start_ind - up_offset,
+                #                               up_crossing[0])
                 else:
                     down_choice, up_choice = down_crossing[0], up_crossing[-1]
             else:
@@ -460,13 +513,13 @@ class Old_Magnet():
                                              baselines[ind], smooth)
                 if plot:
                     plt.plot(t[down_choice], m[down_choice],
-                             marker='*', color='m')
+                             marker='^', color='b', markersize=5)
             if up_choice:
                 final_up_idx = self.up_search(up_choice,
                                          baselines[ind], smooth)
                 if plot:
                     plt.plot(t[up_choice], m[up_choice],
-                             marker='*', color='m')
+                             marker='^', color='r', markersize=5)
             
             
             ### Check for indices being stuck on "hills" during search ###
@@ -477,7 +530,7 @@ class Old_Magnet():
                 hill_check_down = m[
                     (final_down_idx - hill_end):(final_down_idx - hill_start)
                     ]
-                if abs(m[final_down_idx] - curr_baseline) > (1 * self.move): 
+                if abs(m[final_down_idx] - curr_baseline) > (15 * self.move): 
                     if np.mean(hill_check_down) > m[final_down_idx] and m[final_down_idx] < curr_baseline:
                         if plot:
                             plt.plot(t[(final_down_idx - hill_end):(final_down_idx - hill_start)],
@@ -495,7 +548,7 @@ class Old_Magnet():
                     (final_up_idx + hill_start):(final_up_idx + hill_end)
                     ]
                 if ind < len(LPs) - 1:
-                    if abs(m[final_up_idx] - curr_baseline) > (1 * self.move):
+                    if abs(m[final_up_idx] - curr_baseline) > (15 * self.move):
                         if np.mean(hill_check_up) > m[final_up_idx] and m[final_up_idx] < curr_baseline:
                             if plot:
                                 plt.plot(t[(final_up_idx + hill_start):(final_up_idx + hill_end)],
@@ -506,7 +559,8 @@ class Old_Magnet():
                                              markersize=4, linestyle='None')
                             final_up_idx = self.up_search(final_up_idx,
                                                          baselines[ind], smooth)
-                    
+            
+            assert final_up_idx > final_down_idx
             ### PLOT ###
             if plot:
                 # final down and up indices
@@ -619,13 +673,12 @@ def load_final_LP_vectors(magnet, final_press_ind):
     final_LP_vectors = {ind: [] for ind in range(len(final_press_ind))}
     for ind, press_ind in final_press_ind.items():
         down_idx, up_idx = press_ind[0], press_ind[1]
-        if down_idx > 0 and up_idx > 0:
-            final_LP_vectors[ind] = magnet[down_idx:up_idx]
-        else:
-            final_LP_vectors[ind] = 'error'
+        assert down_idx > 0 and up_idx > 0
+        final_LP_vectors[ind] = magnet[down_idx:up_idx]
+        assert len(final_LP_vectors[ind])
     return final_LP_vectors
 
-def day_by_day(mouse_dict, length=500, vmin=0, vmax=1, traces=False, plot=False,
+def day_by_day(mouse_dict, mouse, length=500, vmin=0, vmax=1, traces=False, plot=False,
                save=False):
     all_matrices = {}
     dates = sorted(list(mouse_dict.keys()))
@@ -642,20 +695,20 @@ def day_by_day(mouse_dict, length=500, vmin=0, vmax=1, traces=False, plot=False,
                 all_matrices[date][press_ind,:len(press)] = press
             else:
                 all_matrices[date][press_ind,:length] = press[:length]
-            # if traces:
-            #     plt.plot(press)
-        if traces:
-            data = [len(press) for press in vectors.values()]
-            plt.hist(data, density=True,
-                      bins=list(range(0, 5000, 100)))
-            plt.xlim((0, 5000))
-            plt.ylim((0, 0.003))
-            if save:
-                plt.savefig(f'press_hist_{mouse}_{date}.png', dpi=500)
+            if traces:
+                plt.plot(press)
+        # if traces:
+        #     data = [len(press) for press in vectors.values()]
+        #     plt.hist(data, density=True,
+        #               bins=list(range(0, 5000, 100)))
+        #     plt.xlim((0, 5000))
+        #     plt.ylim((0, 0.003))
+        #     if save:
+        #         plt.savefig(f'press_hist_{mouse}_{date}.png', dpi=500)
     
     for pair in product(date_indices, repeat=2):
         i, j = pair[0], pair[1]
-        print(dates[i], dates[j])
+        print(f'{i}: {dates[i]} /// {j}: {dates[j]}')
         day_1, day_2 = all_matrices[dates[i]], all_matrices[dates[j]]
         pcorr = manual_pairwise_pearsonr(day_1.T, day_2.T)
         flat_pcorr=np.ravel(pcorr)
@@ -837,52 +890,57 @@ if __name__ == '__main__':
     
     file_dir = '/Users/emma-fuze-grace/Lab/medpc_data/medpc_FR5CATEG_old'
     master_df = create_medpc_master(mice, file_dir)
-    mouse, date = 4410, '20220222'
+    mouse, date = 4410, '20220224'
     process = True
 
     # Load magnet session
     mouse_df = master_df[master_df['Mouse'] == mouse]
-    date_df = mouse_df[mouse_df['Date']==date]
+    # date_df = mouse_df[mouse_df['Date']==date]
     
     magnet_file = (
         '/Users/emma-fuze-grace/Lab/hall_sensor_data/hall_sensor_FR5CATEG_old'+ 
         f'/HallSensor_{date}_{mouse}.csv'
         )
     
-    import json
+    # import json
 
-    with open(f'mouse_{mouse}_parameters.json') as file:
-        parameters = json.load(file)
+    # with open(f'mouse_{mouse}_parameters.json') as file:
+    #     parameters = json.load(file)
     
-    session = Old_Magnet(magnet_file, date_df, mouse, date, process,
-                          on_off_threshold=parameters['on_off_thresholds'][date],
-                          independent=parameters['independent_thresholds'][date],
-                          weird_last_press=False)
+    # session = Old_Magnet(magnet_file, date_df, mouse, date, process,
+    #                       on_threshold=parameters['on_thresholds'][date],
+    #                       off_threshold=parameters['off_thresholds'][date],
+    #                       independent=parameters['independent_thresholds'][date],
+    #                       weird_last_press=False)
     
-    session.optimize_thresholds(percent=parameters['percents'][date], plot=False)
-    session.detect_press_ind(plot=False, 
-                             search_offset=parameters['search_offset'][date], 
-                             hill_start=parameters['hill_start'][date],
-                              num_hill_checks=parameters['num_hill_checks'][date],
-                              hill_end=parameters['hill_end'][date])
-    final_LP_vectors = load_final_LP_vectors(session.magnet, 
-                                              session.final_press_ind) 
-    session.plot(['medpc', 'presses', 'press_boundaries'])
-    # import pickle
-    # with open('magnet_presses_4392.pkl', 'rb') as handle:
-    #     mouse_dict = pickle.load(handle)
-    #     # lengths = [300, 500, 600, 700, 800, 900, 1000, 1250, 1500, 1750, 2000]
-    #     length = 2000
-    #     all_matrices, final_corr_matrix = day_by_day(mouse_dict, length=length, 
-    #                                                   vmin=0, vmax=1, plot=True,traces=False,
-    #                                                   save=False)
-    #     final_matrices = by_press_no(all_matrices, mouse_dict, master_df, mouse, 
-    #                                               length=length, vmin=0, vmax=1,
-    #                                               save=False, plot=True)
-    #     in_seq_matrices, out_seq_matrices = in_vs_out_seq_corr(all_matrices, mouse_dict,
-    #                                                             master_df, mouse,
-    #                                                             length=length,
-    #                                                             vmin_in=0, vmax_in=1,
-    #                                                             vmin_out=0, vmax_out=1,
-    #                                                             save=False, plot=True)
+    # session.plot(['medpc'])
+    # session.optimize_thresholds(percent=parameters['percents'][date], plot=True)
+    # session.detect_press_ind(plot=True, 
+    #                           down_offset=parameters['down_offset'][date], 
+    #                           up_offset=parameters['up_offset'][date], 
+    #                           hill_start=parameters['hill_start'][date],
+    #                           num_hill_checks=parameters['num_hill_checks'][date],
+    #                           hill_end=parameters['hill_end'][date])
+    # final_LP_vectors = load_final_LP_vectors(session.magnet, 
+    #                                           session.final_press_ind) 
+    # session.plot(['medpc', 'presses', 'press_boundaries', 'baselines'])
+    
+    
+    import pickle
+    with open(f'magnet_presses_{mouse}.pkl', 'rb') as handle:
+        mouse_dict = pickle.load(handle)
+        # lengths = [300, 400, 500, 600, 700, 800, 900, 1000, 1250, 1500]
+        length = 400
+        all_matrices, final_corr_matrix = day_by_day(mouse_dict, mouse=mouse, length=length, 
+                                                      vmin=0, vmax=1, plot=True,traces=False,
+                                                      save=False)
+        final_matrices = by_press_no(all_matrices, mouse_dict, master_df, mouse, 
+                                                  length=length, vmin=0, vmax=1,
+                                                  save=False, plot=True)
+        in_seq_matrices, out_seq_matrices = in_vs_out_seq_corr(all_matrices, mouse_dict,
+                                                                master_df, mouse,
+                                                                length=length,
+                                                                vmin_in=0, vmax_in=1,
+                                                                vmin_out=0, vmax_out=1,
+                                                                save=False, plot=True)
     
