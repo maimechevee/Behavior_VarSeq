@@ -1,0 +1,34 @@
+{
+    "on_thresholds": {
+        "20220331": 15
+        },
+    "off_thresholds": {
+        "20220331": 15
+        },
+    "independent_thresholds": {
+       "20220331": 7500
+        },    
+    "down_offset": {
+        "20220331": -10
+        },  
+    "up_offset": {
+        "20220331": -10
+        },   
+    "percents": {
+        "20220331": 0.6
+        },
+    "hill_start": {
+        "20220331": 50
+        },
+    "hill_end": {
+        "20220331": 100
+        },
+    "num_hill_checks": {
+        "20220331": 2
+        },
+    "weird_last_press": [
+    ],
+    "alignment": {
+        "20220331": "left"
+    }
+}
