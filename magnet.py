@@ -24,21 +24,27 @@ import numpy as np
 from scipy.signal import convolve2d
 from mpl_toolkits.mplot3d import Axes3D
 import scipy
-
+import pickle
 
 class Old_Magnet():
     
     def __init__(self, magnet_file, date_df, mouse, date, process=False, 
                  keep=True, RAW_DF=None, smooth_df=None, bins=10,
-                 on_threshold=15, independent=5000,weird_last_press=False,
-                 off_threshold=15):
+                 on_threshold=15, independent=5000,first_last_ind=(0,-2),
+                 off_threshold=15, magnet_off_indices=(0,1000),
+                 top_ind=1, bottom_ind=-1,weird_last_press=False,
+                 normal=True, flip=False, first_threshold=0.4):
         # Save hall sensor files and medpc df (from master_df)
         self.file = magnet_file
+        self.normal=normal
         self.date_df = date_df
         self.mouse = mouse
+        self.flip = flip
         self.date = date
         self.keep = keep
-        self.weird_last_press = weird_last_press
+        self.first_threshold = first_threshold
+        self.weird_last_press=weird_last_press
+        self.magnet_off_indices = magnet_off_indices
         self.RAW_LPs = np.array(date_df['Lever'].values[0][1:]) # starts with a 0
         self.RAW_REWARDS = np.array(date_df['Reward'].values[0])
         print(f'LPs: {len(self.RAW_LPs)}')
@@ -55,19 +61,22 @@ class Old_Magnet():
         
         # Flip data if necessary
         RAW_MAGNET = self.RAW_DF.Hall_sensor.values
-        if RAW_MAGNET[0] > np.mean(RAW_MAGNET):
+        if RAW_MAGNET[0] > np.mean(RAW_MAGNET) or self.flip:
             self.RAW_DF.Hall_sensor = self.RAW_DF.Hall_sensor * (-1)
-        
         if np.mean(RAW_MAGNET) < 1:
             self.RAW_DF.Hall_sensor = self.RAW_DF.Hall_sensor + abs(min(self.RAW_DF.Hall_sensor))
         
-        self.smooth()
+        self.smooth(plot=False)
         # Call other class functions to process data
         if process:
             self.detect_magnet_ON_OFF(on_threshold=on_threshold,
-                                      off_threshold=off_threshold)
-            self.detect_press_boundaries()
-            self.detect_first_last_press(weird_last_press)
+                                      off_threshold=off_threshold,
+                                      magnet_off_indices=magnet_off_indices,
+                                      plot=True)
+            self.detect_press_boundaries(top_ind=top_ind,
+                                         bottom_ind=bottom_ind)
+            self.detect_first_last_press(first_last_ind=first_last_ind,
+                                         first_threshold=first_threshold)
             self.scale_medpc()
             self.create_baselines(independent=independent)
     
@@ -100,8 +109,14 @@ class Old_Magnet():
             plt.hlines([hist_data[1] for hist_data in self.sorted_hist], 
                        self.times[0], self.times[-1])
         if 'first_last_press' in plot_what:
-            # plt.hlines(self.first_last_target, self.times[0], self.times[-1], 
-            #            linewidth=2, color='k')
+            if self.normal:
+                plt.hlines(self.first_last_target, self.times[0], self.times[-1], 
+                            linewidth=2, color='k')
+            else:
+                plt.hlines(self.target_1, self.times[0], self.times[-1], 
+                            linewidth=2, color='k')
+                plt.hlines(self.target_2, self.times[0], self.times[-1], 
+                            linewidth=2, color='k')
             plt.plot(self.times[self.first_down_idx], 
                      self.magnet[self.first_down_idx], marker='o',
                      markersize=10,
@@ -116,11 +131,13 @@ class Old_Magnet():
             plt.plot(self.scaled_rewards,
                 [self.top + 10 for _ in range(len(self.scaled_rewards))],
                 linestyle='--', marker='^', markersize=10, color='c')
-            plt.vlines(self.scaled_LPs, self.bottom, self.top, alpha=0.75,
-                        color ='k')
             for ind, press in enumerate(self.scaled_LPs):
                 plt.text(press, self.top+7, f'{ind}',
                              fontsize=8)
+        
+        if 'lines' in plot_what:
+            plt.vlines(self.scaled_LPs, self.bottom, self.top, alpha=0.75,
+                        color ='k')
                 
         if 'baselines' in plot_what:
             t, LPs = self.times, self.scaled_LPs
@@ -164,7 +181,6 @@ class Old_Magnet():
         """Smooth raw data using fourier transform. Data is not z-scored yet."""
         from scipy.ndimage.filters import uniform_filter1d
         from scipy.fftpack import rfft, irfft, fftfreq
-        
         ### Copied from original file ###
         W = fftfreq(len(self.RAW_DF.Hall_sensor), 
                     d=self.RAW_DF.Time.values[-1] - self.RAW_DF.Time.values[0])
@@ -182,6 +198,8 @@ class Old_Magnet():
         self.smooth_df['Hall_sensor'] = smooth_magnet
         self.magnet = smooth_magnet
         self.times = self.smooth_df['Time'].values
+        self.magnet_orig = self.magnet.copy()
+        self.times_orig = self.times.copy()
         
         if plot:
             plt.figure()
@@ -190,45 +208,56 @@ class Old_Magnet():
             plt.plot(cut_signal)
         
 
-    def detect_magnet_ON_OFF(self, on_threshold=15, off_threshold=15, plot=False):
+    def detect_magnet_ON_OFF(self, on_threshold=15, off_threshold=15, 
+                             magnet_off_indices=(0,1000), plot=False):
         """Find indices for when magnet turns on and off.
         Note: indices correspond to original, untruncated indexing scheme.
         """
         
         # Grab data from first second of file when magnet is still off
-        magnet_off_median = np.median(self.magnet[
-            self.times < self.times[0] + 1000])
-        magnet_off_std = np.std(
-            self.magnet[self.times < self.times[0] + 1000])
-    
+        if self.flip:
+            magnet_off_sample = self.magnet[-10_000:]
+            magnet_off_median = np.median(magnet_off_sample)
+            magnet_off_std = np.std(magnet_off_sample)
+        else:
+            magnet_off_sample = self.magnet[
+                magnet_off_indices[0]:magnet_off_indices[1]]
+            magnet_off_median = np.median(magnet_off_sample)
+            magnet_off_std = np.std(magnet_off_sample)
+        # print(magnet_off_median)
+        # print(magnet_off_std)
         # Identify magnet onset
-        ii = 1    #counter   
+        ii = magnet_off_indices[1] # start at end of magnet_off baseline   
         not_found = True
         beg_ind = 1
         #loop through data until you deflect from OFF to ON
-        while not_found :
-            if (abs(self.magnet[ii] - magnet_off_median) > on_threshold * magnet_off_std) :
-                beg_ind = ii
-                not_found = False
-            ii = ii + 1
-
+        if self.flip or not isinstance(on_threshold, int):
+            beg_ind = 0
+        else:
+            while not_found :
+                if (abs(self.magnet_orig[ii] - magnet_off_median) > on_threshold * magnet_off_std) :
+                    beg_ind = ii
+                    not_found = False
+                ii = ii + 1
+        # print(beg_ind)
         # Identify magnet offset 
         if isinstance(off_threshold, int):
             not_found = True
             end_ind = beg_ind 
             while not_found :#loop through data until you deflect from ON to OFF
-                if (abs(self.magnet[ii] - magnet_off_median) < off_threshold * magnet_off_std) :
+                if (abs(self.magnet_orig[ii] - magnet_off_median) < off_threshold * magnet_off_std) :
                     end_ind = ii
                     not_found = False
                 ii = ii + 1
         else:
             end_ind = len(self.times) - 1
-        
+        print(end_ind)
         # Save to Magnet object attributes
         self.beg_ind = beg_ind
         self.end_ind = end_ind
-        self.magnet = self.magnet[beg_ind:end_ind]
-        self.times = self.times[beg_ind:end_ind]
+        print(beg_ind, end_ind)
+        self.magnet = self.magnet_orig[beg_ind:end_ind]
+        self.times = self.times_orig[beg_ind:end_ind]
         
         # Grab baseline during OFF state using first 1000 ms
         self.rough_baseline = np.mean(self.magnet[beg_ind:beg_ind + 1000]);
@@ -236,9 +265,12 @@ class Old_Magnet():
         if plot:
             plt.figure()
             plt.title('Find beg/end indices')
-            plt.plot(self.times, self.magnet, alpha=0.5)
-            plt.vlines([beg_ind, end_ind], min(self.magnet), max(self.magnet), 
+            plt.plot(self.times_orig, self.magnet_orig, alpha=0.5)
+            plt.vlines([self.times_orig[beg_ind], self.times_orig[end_ind]], 
+                       min(self.magnet_orig), max(self.magnet_orig), 
                        color='r')
+            plt.hlines(magnet_off_median, self.times_orig[magnet_off_indices[0]],
+                       self.times_orig[magnet_off_indices[1]], color='r',linewidth=3)
         
     def detect_press_boundaries(self, top_ind=1, bottom_ind=-2, bins=10):
         """Find typical top and bottom boundaries of presses based on
@@ -251,25 +283,26 @@ class Old_Magnet():
         sorted_hist = [item for item in sorted_hist if item[0] > 1000]
         sorted_hist = sorted(sorted_hist, key=lambda x:x[1], reverse=True)
         top, bottom = sorted_hist[top_ind][1], sorted_hist[bottom_ind][1]
-        
+        print(sorted_hist)
+        print(bottom_ind)
         # Save data
         self.sorted_hist = sorted_hist
         self.top = top
         self.bottom = bottom
         
     
-    def detect_first_last_press(self,weird_last_press=False):
+    def detect_first_last_press(self,first_last_ind=(0, -2),first_threshold=0.4):
+        if self.weird_last_press:
+            first_last_ind=(0, -1)
         """Detect first and last press (down) indices."""
-        self.first_last_target = self.top - 0.4 * (self.top - self.bottom)
+        self.first_last_target = self.top - first_threshold * (self.top - self.bottom)
         bool_mask = self.magnet < self.first_last_target
         crossings = np.invert( bool_mask[:-1] == bool_mask[1:] )
         self.all_down_idxs = np.where(np.invert(bool_mask[:-1]) & crossings)
         self.all_up_idxs = np.where(bool_mask[:-1] & crossings )
-        self.first_down_idx = self.all_down_idxs[0][0]
-        if weird_last_press:
-            self.last_down_idx = self.all_down_idxs[0][-1]
-        else:
-            self.last_down_idx = self.all_down_idxs[0][-2]
+        self.first_down_idx = self.all_down_idxs[0][first_last_ind[0]]
+        self.last_down_idx = self.all_down_idxs[0][first_last_ind[1]]
+            
         
     def scale_medpc(self):
         magnet_time_difference = (
@@ -324,13 +357,21 @@ class Old_Magnet():
             # Assign beg/end search indices
             if ind < len(LPs) - 1:
                 search_times = t[(t > press) & (t < LPs[ind + 1])]
-                search_start_ind = np.where(t == search_times[0])[0][0]
-                search_end_ind = np.where(t == search_times[-1])[0][0]
+                if search_times.size:
+                    search_start_ind = np.where(t == search_times[0])[0][0]
+                    search_end_ind = np.where(t == search_times[-1])[0][0]
+                else:
+                    print(f'Very short press, {ind}, using previous press')
+                    thresholds[ind] = 9999
+                    # in case there is no data in between medpc time stamps
+                    continue
+                    
             else:
                 search_times = t[t > press]
                 search_start_ind = np.where(t == search_times[0])[0][0]
                 search_end_ind = len(m) - 1
-            
+                    
+                
             # Conduct search
             search_magnet = m[search_start_ind:search_end_ind]
             curr_baseline = baselines[ind]
@@ -413,6 +454,11 @@ class Old_Magnet():
         for ind, press, threshold, curr_baseline in zip(range(len(LPs)), 
                                         LPs, self.thresholds,
                                         baselines):
+            
+            
+            if threshold == 9999: 
+                final_press_ind[ind] = final_press_ind[ind-1]
+                continue
             if ind < 1:
                 prev_up = 0
                 next_press = LPs[ind + 1]
@@ -489,10 +535,13 @@ class Old_Magnet():
                     # This is setup to detect the leftmost press detected
                     # If the previous up index has already been found in the search vector,
                     # then look for next press
-                    if up_crossing - search_start_ind < 250 and alignment == 'right':
+                    if ind ==len(LPs):
+                        down_choice, up_choice = (search_start_ind - down_offset,
+                                                  up_crossing)
+                    elif alignment == 'right':
                         down_choice, up_choice = (down_crossing,
                                                   search_end_ind + up_offset)
-                        
+                    
                     else:
                         down_choice, up_choice = (search_start_ind - down_offset,
                                                   up_crossing)
@@ -504,9 +553,9 @@ class Old_Magnet():
                         final_down_idx, up_choice = prev_up, up_crossing[-1]
                     else:
                         final_down_idx, up_choice = prev_up, search_end_ind + up_offset
-                elif search_end_ind - down_crossing[-1] < 250 and down_crossing[0] > up_crossing[0]:
+                elif down_crossing[0] > up_crossing[0]:
                     # Could indicate a second press detected
-                    if alignment == 'left':
+                    if ind == len(LPs) -1 or alignment == 'left':
                         down_choice, up_choice = (search_start_ind - down_offset,
                                                   up_crossing[0])
                     else:
@@ -685,10 +734,13 @@ class Old_Magnet():
 
 ### Outside the Class ###
 
-def load_final_LP_vectors(magnet, final_press_ind):
+def load_final_LP_vectors(magnet, final_press_ind,override_zscore=(False,'n/a')):
     """Returns a dictionary where keys are press index and values
     are arrays of presses."""
-    magnet = sp.stats.zscore(magnet)
+    if override_zscore[0]:
+        magnet = sp.stats.zscore(magnet[:override_zscore[1]])
+    else:
+        magnet = sp.stats.zscore(magnet)
     final_LP_vectors = {ind: [] for ind in range(len(final_press_ind))}
     for ind, press_ind in final_press_ind.items():
         down_idx, up_idx = press_ind[0], press_ind[1]
@@ -738,6 +790,8 @@ def colorful_traces(mouse_dict, mouse, date, num_presses=100,
     colors = ['#ff0000', '#ffa500', '#ffff00', '#008000', '#0000ff',
               '#ee82ee', '#4b0082']
     plt.figure()
+    plt.title(f'{mouse}, {date}')
+    plt.xlabel('time (ms)')
     plt.xlim((0, x_max))
     # plt.title(f'{mouse}, {date}, #LPs = {len(vectors)}')
     vectors = mouse_dict[date]
@@ -747,7 +801,6 @@ def colorful_traces(mouse_dict, mouse, date, num_presses=100,
         press = vectors[press_ind]
         length = len(press)
         x_list = [i for i in range(0, length, int(length/len(colors)))]
-        print(x_list)
         for ind, (x, color) in enumerate(zip(x_list[:-1], colors)):
             if ind == len(colors):
                 plt.gca().plot([i for i in range(x, x_list[ind + 1])],
@@ -1051,16 +1104,14 @@ def manual_pairwise_pearsonr(A_array,B_array):
     return pcorr
 
 import cv2
-from skimage import io, img_as_float
-from skimage.filters import gaussian
 
 def all_presses_corr(mouse_dict, mouse, sigma= 1, length=1000, vmin=0, vmax=1, plot=False,
                 blur=101, save=False):
     num_presses = sum([len(value) for value in mouse_dict.values()])
-    print(num_presses)
     all_presses = np.zeros((num_presses, length))
     dates = sorted(list(mouse_dict.keys()))
     row = 0
+    
     for date in dates:
         vectors = mouse_dict[date]
         for press_ind, press in enumerate(vectors.values()):
@@ -1071,20 +1122,99 @@ def all_presses_corr(mouse_dict, mouse, sigma= 1, length=1000, vmin=0, vmax=1, p
             row += 1
     corr_mat = manual_pairwise_pearsonr(all_presses.T, all_presses.T)
     blurred = cv2.GaussianBlur(corr_mat, (blur,blur), 0, borderType=cv2.BORDER_REFLECT_101)
-    plt.figure()
+    if plot:
+        plt.figure()
+        plt.imshow(blurred,cmap='jet',vmin=0,vmax=1)
+        plt.title(f'{mouse}, {date}')
     plt.hist(np.ravel(blurred), bins=50)
     return all_presses, corr_mat, blurred
     
+def scan_files(mice, date):
+    for mouse in mice:
+        magnet_file = (
+            '/Users/emma-fuze-grace/Lab/hall_sensor_data'+ 
+            f'/{date}/HallSensor_{date}_{mouse}.csv'
+            )
+        try:
+            magnet_df = pd.read_csv(magnet_file)
+        except FileNotFoundError:
+            print(f'FileNotFoundError: {mouse}')
+            continue
+        magnet_df = pd.read_csv(magnet_file)
+        magnet_df.columns = ['Hall_sensor','Magnet_block','Time']
+        plt.figure()
+        plt.title(f'{mouse}, {date}')
+        plt.plot(magnet_df.Hall_sensor.values)
+    
+def test(mouse, date, freq=0.000000005):
+    magnet_file = (
+        '/Users/emma-fuze-grace/Lab/hall_sensor_data'+ 
+        f'/{date}/HallSensor_{date}_{mouse}.csv'
+        )
+    magnet_df = pd.read_csv(magnet_file)
+    magnet_df.columns = ['Hall_sensor','Magnet_block','Time']
+    plt.figure()
+    from scipy.ndimage.filters import uniform_filter1d
+    from scipy.fftpack import rfft, irfft, fftfreq
+    W = fftfreq(len(magnet_df.Hall_sensor), 
+                d=magnet_df.Time.values[-1] - magnet_df.Time.values[0])
+    f_signal = rfft(magnet_df.Hall_sensor.values)
+    cut_f_signal = f_signal.copy()
+    cut_f_signal[(W>freq)] = 0
+    cut_signal = irfft(cut_f_signal)
+    smooth_magnet = uniform_filter1d(cut_signal, size=50)
+    plt.title(f'{mouse}, {date}')
+    plt.plot(smooth_magnet)
+    return smooth_magnet
+    
+def first_last_stats(mice, dates, length=500, color='b'):
+    final = {mouse: (0,0) for mouse in mice}
+    path=(
+        '/Users/emma-fuze-grace/Lab/Behavior_VarSeq/magnet_parameters_and_indxs'
+        )
+    for mouse, date_pair in zip(mice, dates):
+        
+        if mouse in [4392,4407,4410,4411]:
+            with open(f'{path}/magnet_presses_{mouse}.pkl', 'rb') as handle:
+                mouse_dict = pickle.load(handle)
+        else:
+            with open(f'{path}/mouse_{mouse}.pkl', 'rb') as handle:
+                mouse_dict = pickle.load(handle)
+        first = {date_pair[0]: mouse_dict[date_pair[0]]}
+        last = {date_pair[1]: mouse_dict[date_pair[1]]}
+        print(mouse_dict.keys())
+        all_presses, corr_mat_1,blurred = all_presses_corr(first, mouse, length=length, blur=5,plot=False)
+        all_presses, corr_mat_2,blurred = all_presses_corr(last, mouse, length=length, blur=5,plot=False)
+        flat_1 = np.ravel(corr_mat_1)
+        flat_2 = np.ravel(corr_mat_2)
+        drop_1 = flat_1[flat_1 != 1]
+        drop_2 = flat_2[flat_2 != 1]
+        final[mouse] = (np.median(drop_1), np.median(drop_2))
+    firsts = [corr_vals[0] for corr_vals in final.values()]
+    lasts = [corr_vals[1] for corr_vals in final.values()]
+    plt.figure()
+    for mouse, values in final.items():
+        plt.plot(values, alpha=0.5, color=color)
+    plt.plot([0, 1],[np.mean(firsts), np.mean(lasts)], 
+             linewidth=5, color=color)
+    plt.gca().set_xticks([0,1])
+    plt.gca().set_xticklabels(['early','late'])
+    plt.title(f'Median R-Value n={len(mice)}, length={length}')
+    return final
+        
 if __name__ == '__main__':
     
     ### FR5_CATEG_GROUP_1 ###
-    # mice = [i for i in range(4392, 4414)]
-    mice = [i for i in range(4667, 4694)]
+    mice = [i for i in range(4392, 4414)]
+    # mice = [i for i in range(4667, 4694)]
+    # mice = [4222, 4225, 4226, 4230, 4242]
     # group_1 = range(4392, 4396)
     # group_2 = range(4401, 4406)
     # group_3 = range(4407, 4410)
     # group_4 = range(4410, 4414)
-    
+    path=(
+        '/Users/emma-fuze-grace/Lab/Behavior_VarSeq/magnet_parameters_and_indxs'
+        )
     ### FR5 ###
     # FR5_mice_1 = [4218, 4221, 4222, 4224, 4225]
     # FR5_mice_2 = [4226, 4229, 4230, 4232, 4233]
@@ -1092,9 +1222,9 @@ if __name__ == '__main__':
     # mice = FR5_mice_3
     # mice = [4222, 4224, 4225]
     
-    file_dir = '/Users/emma-fuze-grace/Lab/medpc_data/medpc_FR5CATEG_new'
+    file_dir = '/Users/emma-fuze-grace/Lab/medpc_data/medpc_FR5CATEG_old'
     master_df = create_medpc_master(mice, file_dir)
-    mouse, date = 4677, '20220331'
+    mouse, date = 4392, '20220213'
     process = True
     # Load magnet session
     mouse_df = master_df[master_df['Mouse'] == mouse]
@@ -1108,34 +1238,50 @@ if __name__ == '__main__':
     # session = Old_Magnet(magnet_file, date_df, mouse, date, process,
     #                       on_threshold=15,
     #                       off_threshold=15,
-    #                       independent=5000,
+    #                       independent=10000,
+    #                       magnet_off_indices=(0,1000),
+    #                       first_last_ind=(0,-2),
+    #                       top_ind=1,bottom_ind=-2,
+    #                       normal=True,
     #                       weird_last_press=False)
-    # session.plot(['medpc', 'presses'])
+    # session.plot(['medpc', 'lines'])
     # session.plot()
     import json
 
-    with open(f'mouse_{mouse}_parameters.json') as file:
+    with open(f'{path}/mouse_{mouse}_parameters.json') as file:
         parameters = json.load(file)
     if date in parameters['weird_last_press']:
         weird_last_press=True
     else:
         weird_last_press=False
+    if date in parameters["magnet_off_indices"].keys():
+        magnet_off_indices = parameters["magnet_off_indices"][date]
+    else:
+        magnet_off_indices = (0, 1000)
+    if date in parameters["flip"]:
+        flip = True
+    else:
+        flip = False
     session = Old_Magnet(magnet_file, date_df, mouse, date, process,
                           on_threshold=parameters['on_thresholds'][date],
                           off_threshold=parameters['off_thresholds'][date],
                           independent=parameters['independent_thresholds'][date],
-                          weird_last_press=weird_last_press)
+                          weird_last_press=weird_last_press,
+                          magnet_off_indices=magnet_off_indices,
+                          first_last_ind=parameters['first_last_ind'][date],
+                          flip=flip, first_threshold=0.4,bottom_ind=-2)
     
     session.plot()
-    session.optimize_thresholds(percent=parameters['percents'][date], plot=False)
-    session.detect_press_ind(plot=False, 
+    session.optimize_thresholds(percent=parameters['percents'][date], plot=True)
+    session.detect_press_ind(plot=True, 
                               down_offset=parameters['down_offset'][date], 
                               up_offset=parameters['up_offset'][date], 
                               hill_start=parameters['hill_start'][date],
                               num_hill_checks=parameters['num_hill_checks'][date],
                               hill_end=parameters['hill_end'][date],
                               alignment=parameters['alignment'][date] )
-    # session.optimize_thresholds(percent=0.6, plot=False)
+    session.plot(['medpc','presses', 'press_boundaries'])
+    # session.optimize_thresholds(percent=0.85, plot=True)
     # session.detect_press_ind(plot=True, 
     #                           down_offset=15, 
     #                           up_offset=15, 
@@ -1143,17 +1289,58 @@ if __name__ == '__main__':
     #                           num_hill_checks=2,
     #                           hill_end=100,
     #                           alignment='left')
+    mice = [4674, 4677, 4678, 4679, 4680, 4681, 4688, 4692, 4693]
+    dates = [
+        ('20220309','20220325'),
+        ('20220331','20220413'),
+        ('20220331','20220413'),
+        ('20220325','20220413'),
+        ('20220309','20220325'),
+        ('20220311','20220330'),
+        ('20220311','20220401'),
+        ('20220311','20220330'),
+        ('20220310','20220330')
+        ]
+    
+    # FR5
+    mice = [4222, 4225, 4226, 4230,4242]
+    dates = [
+        ('20211210','20211215'),
+        ('20211210','20211215'),
+        ('20211210','20211214'),
+        ('20211210','20211215'),
+        ('20211210','20211215'),
+        ]
+    
+    # CATEG
+    mice = [4392, 4407, 4410, 4411, 4393, 4394, 4401]
+    dates = [
+        ('20220214','20220224'),
+        ('20220214','20220224'),
+        ('20220214','20220224'),
+        ('20220214','20220224'),
+        ('20220216','20220224'),
+        ('20220216','20220223'),
+        ('20220216','20220223'),
+        ('20220216','20220223'),
+        ]
     final_LP_vectors = load_final_LP_vectors(session.magnet, 
                                               session.final_press_ind) 
-    session.plot(['medpc', 'presses', 'press_boundaries', 'baselines'])
-    
+    [[4387, 4396, 4397, 4667, 4668, 4682],
+     [4388, 4389, 4398, 4399, 4669, 4670, 4684, 4685],
+     [4392, 4393,4394,4395,4401,4402,4403,4404,4405,4407,
+      4408,4409,4410,4411]]
+    fr5 = [4222, 4224, 4225, 4226, 4229, 4230, 4233, 4240, 4242]
+    # session.plot(['presses'])
+    # plt.plot(session.times_orig[session.beg_ind],session.magnet_orig[session.beg_ind],markersize=10,marker='*')
+    # plt.plot(session.times_orig[session.end_ind],session.magnet_orig[session.end_ind],markersize=10,marker='*')
     # cv2, image smoothing
-    import pickle
-    with open(f'magnet_presses_{mouse}.pkl', 'rb') as handle:
-        mouse_dict = pickle.load(handle)
-        # lengths = [300, 400, 500, 600, 700, 800, 900, 1000, 1250, 1500]
-        length = 1000
-        vmin, vmax = 0, 1
+    # import pickle
+    # with open(f'magnet_presses_{mouse}.pkl', 'rb') as handle:
+    #     mouse_dict = pickle.load(handle)
+    #     # lengths = [300, 400, 500, 600, 700, 800, 900, 1000, 1250, 1500]
+    #     length = 1000
+    #     vmin, vmax = 0, 1
         # all_matrices, final_corr_matrix = day_by_day(mouse_dict, mouse=mouse, length=length, 
         #                                               vmin=vmin, vmax=vmax, plot=True,traces=True,
         #                                               save=False)
@@ -1175,5 +1362,7 @@ if __name__ == '__main__':
         #     mean_traces(mouse_dict, mouse, date, length=2000, save=False, 
         #     color=(0, float(i/len(dates)), 1))
 # TODOs:
-    # check for long presses
-    # rolling average, day by day overl;ay
+    # rolling average
+    # day by day
+    # show example sequence
+    
