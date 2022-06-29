@@ -71,10 +71,6 @@ np.mean(A) #4.0
 np.std(A)/np.sqrt(len(A)-1) #0.3144854510165755
 
 ###############################################################################
-# Data to be included: FR5, noLight, noForcedR, CATEG 
-###############################################################################
-
-###############################################################################
 # Load data
 ###############################################################################
 mice=[4218,4221,4222,4224,
@@ -121,7 +117,7 @@ for mouse in mice:
         master_df = discard_day(master_df, [[mouse,date]])
 #drop based on google doc
 mice=[4410]
-dates=['20220213']
+dates=['20220213'] #wrong protocol
 for mouse in mice:
     for date in dates:
         master_df = discard_day(master_df, [[mouse,date]])
@@ -136,8 +132,11 @@ noLight_mice=[4386, 4387,4396,4397, 4667,4668,4682, 4683] #8
 noForcedR_mice= [4388,4389,4398,4399, 4669,4670,4684,4685] #8
 
 ###############################################################################
-# Figure 1
 ###############################################################################
+############################## FIGURE 1 #######################################
+###############################################################################
+###############################################################################
+
 ###############################################################################
 # Days to acquisition and renoval of mice that didn't learn
 ###############################################################################
@@ -224,103 +223,7 @@ leg.legendHandles[2].set_color(colors[2])
 leg.legendHandles[3].set_color(colors[3])
 ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)   
-    
-# tab:orange
-# The mean:
-# 3.066666666666667
-# The sem:
-# 0.700113369504347
-# N:
-# 15
-# tab:blue
-# The mean:
-# 3.7142857142857144
-# The sem:
-# 0.8970310602382003
-# N:
-# 8
-# tab:red
-# The mean:
-# 1.375
-# The sem:
-# 0.4199277148680302
-# N:
-# 8
-# tab:green
-# The mean:
-# 1.75
-# The sem:
-# 0.2813657169355689
-# N:
-# 16
-
-
-# #degrees of freedom
-# N = len(Anova_df.feature)
-# df_a = len(Anova_df.virus.unique()) - 1
-# df_b = len(Anova_df.injection.unique()) - 1
-# df_axb = df_a*df_b 
-# df_w = N - (len(Anova_df.virus.unique())*len(Anova_df.injection.unique()))
-
-
-# #Sum of squares
-# grand_mean = Anova_df['feature'].mean()
-# ssq_a = sum([(Anova_df[Anova_df.virus ==l].feature.mean()-grand_mean)**2 for l in Anova_df.virus])
-# ssq_b = sum([(Anova_df[Anova_df.injection ==l].feature.mean()-grand_mean)**2 for l in Anova_df.injection])
-# ssq_t = sum((Anova_df.feature - grand_mean)**2)
-
-# #Sum of squares within
-# dreadd = Anova_df[Anova_df.virus == 1]
-# control = Anova_df[Anova_df.virus == 0]
-# dreadd_injection_means = [dreadd[dreadd.injection == d].feature.mean() for d in dreadd.injection]
-# control_injection_means = [control[control.injection == d].feature.mean() for d in control.injection]
-# ssq_w = sum((control.feature - control_injection_means)**2) +sum((dreadd.feature - dreadd_injection_means)**2)
-
-# #Sum of squares interaction
-# ssq_axb = ssq_t-ssq_a-ssq_b-ssq_w
-
-# #Mean Square A
-# ms_a = ssq_a/df_a
-# #Mean Square B
-# ms_b = ssq_b/df_b
-# #Mean Square AxB
-# ms_axb = ssq_axb/df_axb
-# #Mean Square Within/Error/Residual
-# ms_w = ssq_w/df_w
-
-# #F-ratio
-# f_a = ms_a/ms_w
-# f_b = ms_b/ms_w
-# f_axb = ms_axb/ms_w
-
-# #p-values
-# p_a = stats.f.sf(f_a, df_a, df_w)
-# p_b = stats.f.sf(f_b, df_b, df_w)
-# p_axb = stats.f.sf(f_axb, df_axb, df_w)
-
-
-# #RESULTS
-# results = {'sum_sq':[ssq_a, ssq_b, ssq_axb, ssq_w],
-#            'df':[df_a, df_b, df_axb, df_w],
-#            'F':[f_a, f_b, f_axb, 'NaN'],
-#             'PR(&gt;F)':[p_a, p_b, p_axb, 'NaN']}
-# columns=['sum_sq', 'df', 'F', 'PR(&gt;F)']
-# aov_table1 = pd.DataFrame(results, columns=columns,
-#                           index=['virus', 'injection', 
-#                           'virus:injection', 'Residual'])
-
-# def eta_squared(aov):
-#     aov['eta_sq'] = 'NaN'
-#     aov['eta_sq'] = aov[:-1]['sum_sq']/sum(aov['sum_sq'])
-#     return aov
-# def omega_squared(aov):
-#     mse = aov['sum_sq'][-1]/aov['df'][-1]
-#     aov['omega_sq'] = 'NaN'
-#     aov['omega_sq'] = (aov[:-1]['sum_sq']-(aov[:-1]['df']*mse))/(sum(aov['sum_sq'])+mse)
-#     return aov
-# eta_squared(aov_table1)
-# omega_squared(aov_table1)
-# print(aov_table1)
+   
 
 # Days to criteria all together (for methods)
 days= [2, 0, 2, 1, 1, 2, 0, 1, 1, 4, 2, 3, 7, 0, 3, 0, 3, 0, 2, 1, 1, 1, 3, 2, 1, 1, 2, 1, 4, 1, 3, 0, 1, 1, 3, 3, 1]
@@ -336,6 +239,7 @@ aov = pg.anova(dv='feature', between='group', data=Anova_df,
 # Pretty printing of ANOVA summary
 pg.print_table(aov)
 
+# When performed on all mice, including the ones that were not included in final dataset
 # =============
 # ANOVA SUMMARY
 # =============
@@ -359,6 +263,7 @@ posthocs = pg.pairwise_tukey(dv='feature',  between='group',
                               data=Anova_df)
 pg.print_table(posthocs)
 
+#only on included data
 # ==============
 # POST HOC TESTS
 # ==============
@@ -398,22 +303,23 @@ pg.print_table(posthocs)
 # The sem:
 # 0.3043380752555216
 # N:
-14
+#14
 
 
-#Do a chi-square to test acquisition
-from scipy.stats import chi2_contingency 
+# #Do a chi-square to test acquisition
+# from scipy.stats import chi2_contingency 
 
-g, p, dof, expctd=chi2_contingency([[15,7,8,16],[0,1,0,0]])
-# (4.980978260869565,
-#  0.17319532020189932,
-#  3,
-#  array([[14.68085106,  7.82978723,  7.82978723, 15.65957447],
-#         [ 0.31914894,  0.17021277,  0.17021277,  0.34042553]]))
-fig,ax=plt.subplots(1,1, figsize=(3,3))
-ax.bar([0,1,2,3], [1,0.75,1,1])
-ax.bar([0,1,2,3],[0,0.25,0,0], bottom=[1,0.75,1,1])
+# g, p, dof, expctd=chi2_contingency([[15,7,8,16],[0,1,0,0]])
+# # (4.980978260869565,
+# #  0.17319532020189932,
+# #  3,
+# #  array([[14.68085106,  7.82978723,  7.82978723, 15.65957447],
+# #         [ 0.31914894,  0.17021277,  0.17021277,  0.34042553]]))
+# fig,ax=plt.subplots(1,1, figsize=(3,3))
+# ax.bar([0,1,2,3], [1,0.75,1,1])
+# ax.bar([0,1,2,3],[0,0.25,0,0], bottom=[1,0.75,1,1])
 
+#Run this to exclude mice who did not perform the task for at least 10 days
 # Number of days on FR5
 All_groups=[FR5_mice, noLight_mice, noForcedR_mice,  CATEG_mice]
 Time_on_FR5=[]
@@ -435,6 +341,10 @@ plt.hist(Time_on_FR5, bins=30)
 #DISCARD based on number of days available for analysis (at least 10 days of FR5)
 master_df=discard_mice(master_df, discard_list)
 
+###############################################################################
+#Rerun Figure 1 script to generate the figures in the paper, which are based only on mice included.
+###############################################################################
+
 ################################################################################
 FR5_mice=[x for x in FR5_mice if x in np.unique(master_df['Mouse'])] #9
 CATEG_mice=[x for x in CATEG_mice if x in np.unique(master_df['Mouse'])] #14
@@ -442,106 +352,117 @@ noLight_mice=[x for x in noLight_mice if x in np.unique(master_df['Mouse'])] #6
 noForcedR_mice= [x for x in noForcedR_mice if x in np.unique(master_df['Mouse'])] #8
 ################################################################################
 
+###############################################################################
+###############################################################################
+############################## FIGURE 2 #######################################
+###############################################################################
+###############################################################################
 
+# #############
+# # EXTRA #
+# #############
 
-#Compare LP rate on last day of FR1 to show they are slow at learning but still learn the same
-#manually
-colors=['tab:orange','tab:blue','tab:red',  'tab:green']
-Anova_df=pd.DataFrame(columns=['feature','group', 'subject'])
+# #Compare LP rate on last day of FR1 to show they are slow at learning but still learn the same
+# #manually
+# colors=['tab:orange','tab:blue','tab:red',  'tab:green']
+# Anova_df=pd.DataFrame(columns=['feature','group', 'subject'])
 
-counter=0
-for c,group in enumerate([FR5_mice, noLight_mice, noForcedR_mice,  CATEG_mice]):
-    mice=group
-    Group_rewards=np.zeros((len(group), 30)) #
-    Group_protocols=[]
-    #Get the time to 2x51 in FR1 for each group
-    Group_days_to_criteria=[]
-    for m,mouse in enumerate(mice):
-        mouse_protocols=[]
-        mouse_df=master_df[master_df['Mouse']==mouse]
-        mouse_rewards=np.zeros((1,len(np.unique(mouse_df['Date']))))[0]
-        for i,date in enumerate(np.unique(mouse_df['Date'])[:30]):
-            date_df=mouse_df[mouse_df['Date']==date]
-            try :
-                len(date_df['Reward'].values[0])>1 #will fail if Nan
-                mouse_rewards[i]=len(date_df['Reward'].values[0]) 
-            except:
-                mouse_rewards[i]=0
-                # print(mouse)
-                # print(date)
+# counter=0
+# for c,group in enumerate([FR5_mice, noLight_mice, noForcedR_mice,  CATEG_mice]):
+#     mice=group
+#     Group_rewards=np.zeros((len(group), 30)) #
+#     Group_protocols=[]
+#     #Get the time to 2x51 in FR1 for each group
+#     Group_days_to_criteria=[]
+#     for m,mouse in enumerate(mice):
+#         mouse_protocols=[]
+#         mouse_df=master_df[master_df['Mouse']==mouse]
+#         mouse_rewards=np.zeros((1,len(np.unique(mouse_df['Date']))))[0]
+#         for i,date in enumerate(np.unique(mouse_df['Date'])[:30]):
+#             date_df=mouse_df[mouse_df['Date']==date]
+#             try :
+#                 len(date_df['Reward'].values[0])>1 #will fail if Nan
+#                 mouse_rewards[i]=len(date_df['Reward'].values[0]) 
+#             except:
+#                 mouse_rewards[i]=0
+#                 # print(mouse)
+#                 # print(date)
                 
-            mouse_protocols.append(date_df['Protocol'].values)
-        while len(mouse_rewards)<30:
-            mouse_rewards=np.append(mouse_rewards,float('nan'))
+#             mouse_protocols.append(date_df['Protocol'].values)
+#         while len(mouse_rewards)<30:
+#             mouse_rewards=np.append(mouse_rewards,float('nan'))
             
-        day=[i for i,(a,b) in enumerate(zip(mouse_rewards[:-1], mouse_rewards[1:])) if (a>=46) & (b>=46) ]
+#         day=[i for i,(a,b) in enumerate(zip(mouse_rewards[:-1], mouse_rewards[1:])) if (a>=46) & (b>=46) ]
  
-        Group_days_to_criteria.append(day[0])
-        Anova_df.at[counter,'feature']=len(mouse_df['Lever'].values[day[0]]) / (mouse_df['Lever'].values[day[0]][-1]/60)
-        Anova_df.at[counter,'group']=colors[c]
-        Anova_df.at[counter,'subject']=mouse
-        counter+=1
+#         Group_days_to_criteria.append(day[0])
+#         Anova_df.at[counter,'feature']=len(mouse_df['Lever'].values[day[0]]) / (mouse_df['Lever'].values[day[0]][-1]/60)
+#         Anova_df.at[counter,'group']=colors[c]
+#         Anova_df.at[counter,'subject']=mouse
+#         counter+=1
         
         
-fig,ax=plt.subplots(1,1, figsize=(3,3))
-i=0
-for j,group in enumerate(['tab:orange',  'tab:blue','tab:red','tab:green' ]):
-    group_df=Anova_df[Anova_df['group']==group]
-    for subject in np.unique(group_df['subject']):
-        subject_df=group_df[group_df['subject']==subject]
-        plt.scatter(i,subject_df['feature'].values, color=colors[j], alpha=0.3)
+# fig,ax=plt.subplots(1,1, figsize=(3,3))
+# i=0
+# for j,group in enumerate(['tab:orange',  'tab:blue','tab:red','tab:green' ]):
+#     group_df=Anova_df[Anova_df['group']==group]
+#     for subject in np.unique(group_df['subject']):
+#         subject_df=group_df[group_df['subject']==subject]
+#         plt.scatter(i,subject_df['feature'].values, color=colors[j], alpha=0.3)
 
-    mean0=np.mean(group_df['feature'])
-    sem0=np.std(group_df['feature'])/np.sqrt(len(group_df)-1)
-    print("Means:")
-    print(mean0)
-    print("SEMs:")
-    print(sem0)
-    plt.scatter(i, mean0,  c=colors[j])
-    plt.vlines(i, mean0-sem0,mean0+sem0, color=colors[j])
-    i+=1
-plt.xlabel('Groups', size=16)
-plt.xticks([0,1,2,3], ['FR5','noLight', 'noRwdCol',  'Variance'],fontsize=14)
-plt.ylabel(' Lever press rate (#/sec)', size=16)
-plt.yticks(fontsize=14)
-#plt.ylim(0,20)
-plt.xlim(-1,4)
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-plt.tight_layout()
-# Means:
-# 1.7876447008999226
-# SEMs:
-# 0.18877139388616454
-# Means:
-# 1.4206953847605892
-# SEMs:
-# 0.3140997136499106
-# Means:
-# 1.3252791648780562
-# SEMs:
-# 0.0848490157439139
-# Means:
-# 2.1231497784686577
-# SEMs:
-# 0.2455985149686317
-# One way ANOVA 
-Anova_df['feature'] = pd.to_numeric(Anova_df['feature'])
+#     mean0=np.mean(group_df['feature'])
+#     sem0=np.std(group_df['feature'])/np.sqrt(len(group_df)-1)
+#     print("Means:")
+#     print(mean0)
+#     print("SEMs:")
+#     print(sem0)
+#     plt.scatter(i, mean0,  c=colors[j])
+#     plt.vlines(i, mean0-sem0,mean0+sem0, color=colors[j])
+#     i+=1
+# plt.xlabel('Groups', size=16)
+# plt.xticks([0,1,2,3], ['FR5','noLight', 'noRwdCol',  'Variance'],fontsize=14)
+# plt.ylabel(' Lever press rate (#/sec)', size=16)
+# plt.yticks(fontsize=14)
+# #plt.ylim(0,20)
+# plt.xlim(-1,4)
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# plt.tight_layout()
+# # Means:
+# # 1.7876447008999226
+# # SEMs:
+# # 0.18877139388616454
+# # Means:
+# # 1.4206953847605892
+# # SEMs:
+# # 0.3140997136499106
+# # Means:
+# # 1.3252791648780562
+# # SEMs:
+# # 0.0848490157439139
+# # Means:
+# # 2.1231497784686577
+# # SEMs:
+# # 0.2455985149686317
 
-aov = pg.anova(dv='feature', between='group', data=Anova_df,
-                detailed=True)# Pretty printing of ANOVA summary
-pg.print_table(aov)
-# =============
-# ANOVA SUMMARY
-# =============
+# # One way ANOVA 
+# Anova_df['feature'] = pd.to_numeric(Anova_df['feature'])
 
-# Source        SS    DF     MS        F    p-unc      np2
-# --------  ------  ----  -----  -------  -------  -------
-# group      4.055     3  1.352    2.638    0.066    0.193
-# Within    16.907    33  0.512  nan      nan      nan
+# aov = pg.anova(dv='feature', between='group', data=Anova_df,
+#                 detailed=True)# Pretty printing of ANOVA summary
+# pg.print_table(aov)
+# # =============
+# # ANOVA SUMMARY
+# # =============
+
+# # Source        SS    DF     MS        F    p-unc      np2
+# # --------  ------  ----  -----  -------  -------  -------
+# # group      4.055     3  1.352    2.638    0.066    0.193
+# # Within    16.907    33  0.512  nan      nan      nan
 
 
-
+                    #############
+                    # FIGURE 2D #
+                    #############
 #Check overall performance
 fig,ax=plt.subplots(1,1)
 total_discarded=0
@@ -655,156 +576,163 @@ ax.spines['top'].set_visible(False)
 # 285.07142857142856
 # SEM:
 # 23.238009855424718
-###############################################################################
-# reward rate
-###############################################################################
-fig,ax=plt.subplots(1,1)
-mice=np.unique(master_df['Mouse'])
-Anova_df=pd.DataFrame(columns=['feature','group', 'subject', 'time'])
-All_rewards=[]
-counter=0
-for c,group in enumerate([noLight_mice, noForcedR_mice, FR5_mice, CATEG_mice]):
-    test_mice=[x for x in mice if x in group]
-    group_rewards=np.zeros((len(test_mice), 10))
-    for j,mouse in enumerate(test_mice):
-        # if mouse in Females:
-        #     continue
-        mouse_protocols=[]
-        mouse_df=master_df[master_df['Mouse']==mouse]
-        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
-        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
-        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
-        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
-        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
-        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
-        mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
-        mouse_rewards=[]
+
+# #############
+# # Extra #
+# #############
+# ###############################################################################
+# # reward rate
+# ###############################################################################
+# fig,ax=plt.subplots(1,1)
+# mice=np.unique(master_df['Mouse'])
+# Anova_df=pd.DataFrame(columns=['feature','group', 'subject', 'time'])
+# All_rewards=[]
+# counter=0
+# for c,group in enumerate([noLight_mice, noForcedR_mice, FR5_mice, CATEG_mice]):
+#     test_mice=[x for x in mice if x in group]
+#     group_rewards=np.zeros((len(test_mice), 10))
+#     for j,mouse in enumerate(test_mice):
+#         # if mouse in Females:
+#         #     continue
+#         mouse_protocols=[]
+#         mouse_df=master_df[master_df['Mouse']==mouse]
+#         mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+#         mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+#         mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedReward_DynRespWin_1R'] #do not count the FR1 early days
+#         mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_NoForcedRew_NoLight_DynRespWin_1R'] #do not count the FR1 early days
+#         mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLight'] #do not count the FR1 early days
+#         mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noForcedR'] #do not count the FR1 early days
+#         mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1_noLightnoForcedR'] #do not count the FR1 early days
+#         mouse_rewards=[]
        
-        for i,date in enumerate(np.unique(mouse_df['Date'])[:10]):
-            date_df=mouse_df[mouse_df['Date']==date]
-            # if math.isnan(sum(sum(date_df['Reward'].values))):
-            #     mouse_rewards[i]=0
-            # else:
-            mouse_rewards.append(len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60)) #divide by the last reward timestamps to et the rate
-            #mouse_rewards.append(sum([x<1800 for x in date_df['Reward'].values[0]]) /1800*60) #divide by the last reward timestamps to et the rate
+#         for i,date in enumerate(np.unique(mouse_df['Date'])[:10]):
+#             date_df=mouse_df[mouse_df['Date']==date]
+#             # if math.isnan(sum(sum(date_df['Reward'].values))):
+#             #     mouse_rewards[i]=0
+#             # else:
+#             mouse_rewards.append(len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60)) #divide by the last reward timestamps to et the rate
+#             #mouse_rewards.append(sum([x<1800 for x in date_df['Reward'].values[0]]) /1800*60) #divide by the last reward timestamps to et the rate
             
-            if (i==0) | (i==8):
-                Anova_df.at[counter,'feature']=len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60)
-                Anova_df.at[counter,'group']=colors[c]
-                Anova_df.at[counter,'subject']=mouse
-                Anova_df.at[counter,'time']=i
-                counter+=1
-            elif  (i==9):
-                Anova_df.at[counter-1,'feature']= (Anova_df.at[counter-1,'feature'] + (len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60))) /2
+#             if (i==0) | (i==8):
+#                 Anova_df.at[counter,'feature']=len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60)
+#                 Anova_df.at[counter,'group']=colors[c]
+#                 Anova_df.at[counter,'subject']=mouse
+#                 Anova_df.at[counter,'time']=i
+#                 counter+=1
+#             elif  (i==9):
+#                 Anova_df.at[counter-1,'feature']= (Anova_df.at[counter-1,'feature'] + (len(date_df['Reward'].values[0]) / (date_df['Reward'].values[0][-1]/60))) /2
 
-        if c==1:
-            plt.plot(mouse_rewards, linestyle='dotted',alpha=0.5, color=colors[c])
-            print(mouse)
-        group_rewards[j,:]=mouse_rewards
-    All_rewards.append(group_rewards)
+#         if c==1:
+#             plt.plot(mouse_rewards, linestyle='dotted',alpha=0.5, color=colors[c])
+#             print(mouse)
+#         group_rewards[j,:]=mouse_rewards
+#     All_rewards.append(group_rewards)
 
-for c,group in enumerate(All_rewards):
-    meanFR5=np.mean(group, axis=0)
-    semFR5=np.std(group,axis=0)/np.sqrt(np.shape(group)[0]-1)
-    plt.plot(meanFR5, linewidth=2, color=colors[c])
-    plt.vlines(range(len(meanFR5)), [a-b for a,b in zip(meanFR5,semFR5)], [a+b for a,b in zip(meanFR5,semFR5)], colors=colors[c], linewidths=2) 
-#plt.vlines(3.5,0,6, color='k', linestyle='dashed')
-plt.xlabel('Time from first FR5 session (day)', size=16)
-plt.xticks(fontsize=14)
-plt.ylabel('Reward rate (#/min)', size=16)
-plt.yticks(fontsize=14)
-plt.legend(['noLight, N=6 mice', 'noForcedR, N=8 mice', 'FR5, N=9 mice', 'CATEG, N=14 mice'], loc='upper left')
-leg = ax.get_legend()
-leg.legendHandles[0].set_color(colors[0])
-leg.legendHandles[1].set_color(colors[1])
-leg.legendHandles[2].set_color(colors[2])
-leg.legendHandles[3].set_color(colors[3])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-plt.tight_layout()
+# for c,group in enumerate(All_rewards):
+#     meanFR5=np.mean(group, axis=0)
+#     semFR5=np.std(group,axis=0)/np.sqrt(np.shape(group)[0]-1)
+#     plt.plot(meanFR5, linewidth=2, color=colors[c])
+#     plt.vlines(range(len(meanFR5)), [a-b for a,b in zip(meanFR5,semFR5)], [a+b for a,b in zip(meanFR5,semFR5)], colors=colors[c], linewidths=2) 
+# #plt.vlines(3.5,0,6, color='k', linestyle='dashed')
+# plt.xlabel('Time from first FR5 session (day)', size=16)
+# plt.xticks(fontsize=14)
+# plt.ylabel('Reward rate (#/min)', size=16)
+# plt.yticks(fontsize=14)
+# plt.legend(['noLight, N=6 mice', 'noForcedR, N=8 mice', 'FR5, N=9 mice', 'CATEG, N=14 mice'], loc='upper left')
+# leg = ax.get_legend()
+# leg.legendHandles[0].set_color(colors[0])
+# leg.legendHandles[1].set_color(colors[1])
+# leg.legendHandles[2].set_color(colors[2])
+# leg.legendHandles[3].set_color(colors[3])
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# plt.tight_layout()
 
 
-#manually
-fig,ax=plt.subplots(1,1)
-i=0
-for j,group in enumerate(['tab:blue','tab:red','tab:orange', 'tab:green' ]):
-    group_df=Anova_df[Anova_df['group']==group]
-    for subject in np.unique(group_df['subject']):
-        subject_df=group_df[group_df['subject']==subject]
-        plt.plot([1+i,2+i],subject_df['feature'].values, color=colors[j], alpha=0.3)
+# #manually
+# fig,ax=plt.subplots(1,1)
+# i=0
+# for j,group in enumerate(['tab:blue','tab:red','tab:orange', 'tab:green' ]):
+#     group_df=Anova_df[Anova_df['group']==group]
+#     for subject in np.unique(group_df['subject']):
+#         subject_df=group_df[group_df['subject']==subject]
+#         plt.plot([1+i,2+i],subject_df['feature'].values, color=colors[j], alpha=0.3)
        
-    #test
-    s,p=sp.stats.ttest_rel(group_df[group_df['time']==0]['feature'], group_df[group_df['time']==8]['feature'])
-    print(p)
-    mean0=np.mean(group_df[group_df['time']==0]['feature'])
-    mean9=np.mean(group_df[group_df['time']==8]['feature'])
-    sem0=np.std(group_df[group_df['time']==0]['feature'])/np.sqrt(len(group_df)-1)
-    sem9=np.std(group_df[group_df['time']==8]['feature'])/np.sqrt(len(group_df)-1)
-    plt.plot([1+i,2+i], [mean0, mean9],  color=colors[j])
-    plt.scatter([1+i,2+i], [mean0, mean9],  c=colors[j])
-    plt.vlines([1+i,2+i], [mean0-sem0, mean9-sem9],[mean0+sem0, mean9+sem9], color=colors[j])
-    i+=2
-plt.xlabel('Groups', size=16)
-plt.xticks([1,2,3,4,5,6,7,8], ['First','Last', 'First','Last', 'First','Last', 'First','Last'],fontsize=14)
-plt.ylabel('Reward rate (#/min)', size=16)
-plt.yticks(fontsize=14)
-plt.legend(['noLight, N=6 mice', 'noForcedR, N=8 mice', 'FR5, N=9 mice', 'CATEG, N=14 mice'], loc='upper left')
-leg = ax.get_legend()
-leg.legendHandles[0].set_color(colors[0])
-leg.legendHandles[1].set_color(colors[1])
-leg.legendHandles[2].set_color(colors[2])
-leg.legendHandles[3].set_color(colors[3])
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-plt.tight_layout()
-# t-tests for each group
-# 0.26721081416801556
-# 0.03658372594275172
-# 0.029391381452190387
-# 0.00011432198479542105
+#     #test
+#     s,p=sp.stats.ttest_rel(group_df[group_df['time']==0]['feature'], group_df[group_df['time']==8]['feature'])
+#     print(p)
+#     mean0=np.mean(group_df[group_df['time']==0]['feature'])
+#     mean9=np.mean(group_df[group_df['time']==8]['feature'])
+#     sem0=np.std(group_df[group_df['time']==0]['feature'])/np.sqrt(len(group_df)-1)
+#     sem9=np.std(group_df[group_df['time']==8]['feature'])/np.sqrt(len(group_df)-1)
+#     plt.plot([1+i,2+i], [mean0, mean9],  color=colors[j])
+#     plt.scatter([1+i,2+i], [mean0, mean9],  c=colors[j])
+#     plt.vlines([1+i,2+i], [mean0-sem0, mean9-sem9],[mean0+sem0, mean9+sem9], color=colors[j])
+#     i+=2
+# plt.xlabel('Groups', size=16)
+# plt.xticks([1,2,3,4,5,6,7,8], ['First','Last', 'First','Last', 'First','Last', 'First','Last'],fontsize=14)
+# plt.ylabel('Reward rate (#/min)', size=16)
+# plt.yticks(fontsize=14)
+# plt.legend(['noLight, N=6 mice', 'noForcedR, N=8 mice', 'FR5, N=9 mice', 'CATEG, N=14 mice'], loc='upper left')
+# leg = ax.get_legend()
+# leg.legendHandles[0].set_color(colors[0])
+# leg.legendHandles[1].set_color(colors[1])
+# leg.legendHandles[2].set_color(colors[2])
+# leg.legendHandles[3].set_color(colors[3])
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# plt.tight_layout()
+# # t-tests for each group
+# # 0.26721081416801556
+# # 0.03658372594275172
+# # 0.029391381452190387
+# # 0.00011432198479542105
 
-# One way ANOVA on difference
-new_Anova_df=Anova_df[Anova_df['time']==8].copy()
-new_Anova_df['feature_diff']= np.divide(Anova_df[Anova_df['time']==8]['feature'].values, Anova_df[Anova_df['time']==0]['feature'].values)
-new_Anova_df['feature_diff'] = pd.to_numeric(new_Anova_df['feature_diff'])
-#drop the group that was not significant
-new_Anova_df=new_Anova_df[new_Anova_df['group']!='tab:blue']
+# # One way ANOVA on difference
+# new_Anova_df=Anova_df[Anova_df['time']==8].copy()
+# new_Anova_df['feature_diff']= np.divide(Anova_df[Anova_df['time']==8]['feature'].values, Anova_df[Anova_df['time']==0]['feature'].values)
+# new_Anova_df['feature_diff'] = pd.to_numeric(new_Anova_df['feature_diff'])
+# #drop the group that was not significant
+# new_Anova_df=new_Anova_df[new_Anova_df['group']!='tab:blue']
 
-fig,ax=plt.subplots(1,1)
-i=0
-for j,group in enumerate(['tab:red','tab:orange', 'tab:green' ]):
-    group_df=new_Anova_df[new_Anova_df['group']==group]
-    for subject in np.unique(group_df['subject']):
-        subject_df=group_df[group_df['subject']==subject]
-        plt.scatter(i,subject_df['feature_diff'].values, color=colors[j+1], alpha=0.3)
+# fig,ax=plt.subplots(1,1)
+# i=0
+# for j,group in enumerate(['tab:red','tab:orange', 'tab:green' ]):
+#     group_df=new_Anova_df[new_Anova_df['group']==group]
+#     for subject in np.unique(group_df['subject']):
+#         subject_df=group_df[group_df['subject']==subject]
+#         plt.scatter(i,subject_df['feature_diff'].values, color=colors[j+1], alpha=0.3)
 
-    mean0=np.mean(group_df['feature_diff'])
-    sem0=np.std(group_df['feature_diff'])/np.sqrt(len(group_df)-1)
-    plt.scatter(i, mean0,  c=colors[j+1])
-    plt.vlines(i, mean0-sem0,mean0+sem0, color=colors[j+1])
-    i+=1
-plt.xlabel('Groups', size=16)
-plt.xticks([0,1,2], [ 'noRwdCol', 'FR5', 'Variance'],fontsize=14)
-plt.ylabel(' DELTA Reward rate (#/min)', size=16)
-plt.yticks(fontsize=14)
-plt.ylim(-1,5)
-plt.xlim(-0.5,2.5)
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False)
-plt.tight_layout()
+#     mean0=np.mean(group_df['feature_diff'])
+#     sem0=np.std(group_df['feature_diff'])/np.sqrt(len(group_df)-1)
+#     plt.scatter(i, mean0,  c=colors[j+1])
+#     plt.vlines(i, mean0-sem0,mean0+sem0, color=colors[j+1])
+#     i+=1
+# plt.xlabel('Groups', size=16)
+# plt.xticks([0,1,2], [ 'noRwdCol', 'FR5', 'Variance'],fontsize=14)
+# plt.ylabel(' DELTA Reward rate (#/min)', size=16)
+# plt.yticks(fontsize=14)
+# plt.ylim(-1,5)
+# plt.xlim(-0.5,2.5)
+# ax.spines['right'].set_visible(False)
+# ax.spines['top'].set_visible(False)
+# plt.tight_layout()
 
-aov = pg.anova(dv='feature_diff', between='group', data=new_Anova_df,
-               detailed=True)# Pretty printing of ANOVA summary
-pg.print_table(aov)
-# =============
-# ANOVA SUMMARY
-# =============
+# aov = pg.anova(dv='feature_diff', between='group', data=new_Anova_df,
+#                detailed=True)# Pretty printing of ANOVA summary
+# pg.print_table(aov)
+# # =============
+# # ANOVA SUMMARY
+# # =============
 
-# Source        SS    DF     MS        F    p-unc      np2
-# --------  ------  ----  -----  -------  -------  -------
-# group      5.485     2  2.742    1.025    0.372    0.068
-# Within    74.894    28  2.675  nan      nan      nan
+# # Source        SS    DF     MS        F    p-unc      np2
+# # --------  ------  ----  -----  -------  -------  -------
+# # group      5.485     2  2.742    1.025    0.372    0.068
+# # Within    74.894    28  2.675  nan      nan      nan
 
+                    #############
+                    # FIGURE 2A #
+                    #############
 ###############################################################################
 # LP rate
 ###############################################################################
@@ -937,6 +865,10 @@ plt.tight_layout()
 # 0.035334875370374386  noMustColect
 # 4.091272124995579e-05 LowVariance
 
+                    #############
+                    # FIGURE 2C #
+                    #############
+
 #Compare LP rate on last day across groups
 #manually
 new_Anova_df=Anova_df[Anova_df['time']==8].copy()
@@ -1008,11 +940,9 @@ pg.print_table(posthocs)
 # tab:green   tab:red         4.002      5.938  -1.936  1.121  -1.727      0.318    -0.531
 # tab:orange  tab:red         8.746      5.938   2.808  1.229   2.285      0.112     0.766
 
-
-
-
-
-
+                    #############
+                    # FIGURE 2B #
+                    #############
 # One way ANOVA on fold change
 new_Anova_df=Anova_df[Anova_df['time']==8].copy()
 new_Anova_df['feature_diff']= np.divide(Anova_df[Anova_df['time']==8]['feature'].values, Anova_df[Anova_df['time']==0]['feature'].values)
@@ -1059,9 +989,15 @@ pg.print_table(aov)
 # Within    81.956    28  2.927  nan      nan      nan
 
 ###############################################################################
-# Figure 2
+###############################################################################
+############################## FIGURE 3 #######################################
+###############################################################################
 ###############################################################################
 
+                    #############
+                    # FIGURE 3 B-E #
+                    #############
+                
 ###############################################################################
 # IPI distribution
 ###############################################################################
@@ -1275,9 +1211,14 @@ for c,group in enumerate([noLight_mice, noForcedR_mice, FR5_mice, CATEG_mice]):
     plt.ylim(0.5,200)
 
 
+                    #############
+                    # FIGURE 3F #
+                    #############
+
 #Plot within IPI
 Anova_df=pd.DataFrame(columns=['feature','group', 'subject', 'time'])
 counter=0
+Interfail_IPIs=0
 fig,ax=plt.subplots(1,1,figsize=(8,5))
 for c,group in enumerate([ FR5_mice,noLight_mice, noForcedR_mice, CATEG_mice]):
     mice=[x for x in np.unique(master_df['Mouse']) if x in group]
@@ -1471,8 +1412,11 @@ plt.tight_layout()
 # 0.028785916329506313
 
 
+                    #############
+                    # FIGURE 3G #
+                    #############
 #########################
-#Same, but plotting DELTA
+#Same, but plotting FOLD CHANGE
 #########################
 Anova_df=pd.DataFrame(columns=['feature','group', 'subject', 'time'])
 counter=0
@@ -1678,6 +1622,15 @@ ax.spines['right'].set_visible(False)
 ax.spines['top'].set_visible(False)
 plt.tight_layout()
 
+###############################################################################
+###############################################################################
+############################## FIGURE 6 #######################################
+###############################################################################
+###############################################################################
+
+                    #############
+                    # FIGURE 6B #
+                    #############
 #plot the three types of IPIs for CATEG
 Anova_df=pd.DataFrame(columns=['feature','group', 'subject', 'time'])
 counter=0
@@ -1807,6 +1760,9 @@ ax.spines['top'].set_visible(False)
 # 0.4581617930200178 inter 
 # 0.00038409493637690275 inter failed
 
+                    #############
+                    # FIGURE 6C #
+                    #############
 new_Anova_df=Anova_df[Anova_df['time']==9].copy()
 new_Anova_df['feature_diff']= np.divide(Anova_df[Anova_df['time']==9]['feature'].values, Anova_df[Anova_df['time']==0]['feature'].values)
 new_Anova_df['feature_diff'] = pd.to_numeric(new_Anova_df['feature_diff'])
@@ -1859,15 +1815,92 @@ pg.print_table(posthocs)
 # ----------  ---  ---  --------  ------------  ------  ------  ---------  -------  ------  --------
 # group       k    r    False     True          -1.432  26.000  two-sided    0.164   0.752    -0.525
 
-#example for inter failed: use Emma's code
-################################################################################
-# Delay to reward collection? TBD
+
+
+###############################################################################
+###############################################################################
+############################## FIGURE 4 #######################################
+###############################################################################
 ###############################################################################
 
-################################################################################
-# Figure 3
-###############################################################################
+                    #############
+                    # FIGURE 4A,B #
+                    #############
 
+#The current raster examples are actually based on the extra training done after, should change in final version
+sequential_mice=[4219,4224,4225,4226,4222,4230,4231,4239,4234,4240,4241,4229]
+mice=[x for x in FR5_mice if x in sequential_mice]
+file_dir='G:/Behavior study Dec2021/All medpc together'
+master_df2 = create_medpc_master(mice, file_dir)
+
+#drop mouse/days based on google doc notes
+discard_list=[
+[4240, '20220124'], #wrong protocol
+[4224, '20220121'], #wrong protocol
+[4224, '20220124'], #wrong protocol
+[4225, '20220124'], #wrong protocol
+[4226, '20220124'], #wrong protocol
+[4221, '20220121'], #wrong protocol
+[4221, '20220124'], #wrong protocol
+[4230, '20220121'], #wrong protocol
+[4230, '20220124'], #wrong protocol
+[4229, '20220121'], #wrong protocol
+]
+master_df2 = discard_day(master_df2, discard_list)
+
+def moving_average(a, n=3) :
+    ret = np.cumsum(a, dtype=float)
+    ret[n:] = ret[n:] - ret[:-n]
+    return ret[n - 1:] / n
+
+test_mice=[4229]#[4219, 4225,4230,4239]
+for j,mouse in enumerate(test_mice):
+    mouse_protocols=[]
+    mouse_df=master_df2[master_df2['Mouse']==mouse]
+    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
+    # if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
+    counter=0
+    Variances=[]
+    for i,date in enumerate(['20211215','20220201']):
+        
+        fig,ax1=plt.subplots(1,1)
+        fig,ax2=plt.subplots(1,1, figsize=(6,3))
+        Range=(0,5)
+        plt.title(mouse)
+        date_df=mouse_df[mouse_df['Date']==date]
+        #find the index of 5 presses preceding each reward
+        rewards=date_df['Reward'].values[0]
+        LPs=np.array(date_df['Lever'].values[0])
+        Presses=np.zeros((len(rewards), 5))
+        Trialwise_LPs=[]
+        for k,rwd in enumerate(rewards):
+            LP_indices=np.where(LPs<=rwd)[0][-5:]
+            trial_LPs=LPs[LP_indices]-LPs[LP_indices[0]]
+            Trialwise_LPs.append(trial_LPs)
+            Presses[k,:]=trial_LPs
+            ax1.scatter(trial_LPs, np.ones_like(trial_LPs)+counter, c=['k','b','y','r','g'])
+            trial_IPI_var=np.var(np.diff(trial_LPs))
+            Variances.append(trial_IPI_var)
+            counter+=1
+        ax1.set_xlim(Range)
+        ax2.scatter(np.arange(len(Variances)), Variances)
+        ax2.plot(np.arange(len(Variances))[3:-3], moving_average(Variances, n=7), color='r')
+        ax2.set_yscale('log')
+        ax2.set_ylim(0.0001, 1000)
+        fig, ax3=plt.subplots(1,1)
+        sns.distplot( np.log10(Variances))
+        plt.ylim(0,0.4)
+        plt.vlines(np.median(np.log10(Variances)), 0,0.4)
+        plt.figure()
+        plt.hist(Presses[:,1], bins=30, range=Range, color='b', alpha=0.5)
+        plt.hist(Presses[:,2], bins=30, range=Range, color='y', alpha=0.5)
+        plt.hist(Presses[:,3], bins=30, range=Range, color='r', alpha=0.5)
+        plt.hist(Presses[:,4], bins=30, range=Range, color='g', alpha=0.5)  
+        
+
+                    #############
+                    # FIGURE 4C #
+                    #############
 ###############################################################################
 # within sequence IPI variance (heatmaps - all mice treated equal)
 ###############################################################################
@@ -1957,6 +1990,9 @@ for j,mouse in enumerate(test_mice):#enumerate(High_resp_CATEG)   np.unique(mast
     plt.colorbar()
 
 
+                    #############
+                    # FIGURE 4D #
+                    #############
 ###############################################################################
 # within sequence IPI variance (plot - accounts for mouse)
 ###############################################################################
@@ -2130,6 +2166,9 @@ plt.tight_layout()
 # 0.8752826260292234 noMustCollect
 # 0.06868906739865306 LowVariance
 
+                    #############
+                    # FIGURE 4E #
+                    #############
 new_Anova_df=Anova_df[Anova_df['time']==8].copy()
 new_Anova_df['feature_diff']= np.divide(Anova_df[Anova_df['time']==8]['feature'].values, Anova_df[Anova_df['time']==0]['feature'].values)
 new_Anova_df['feature_diff'] = pd.to_numeric(new_Anova_df['feature_diff'])
@@ -2183,9 +2222,22 @@ plt.tight_layout()
 # 0.3467330087233512
 # SEMs:
 # 0.08563433419212924
+
+
 ###############################################################################
-# Figure 4: magnet?
 ###############################################################################
+############################## FIGURE 5 #######################################
+###############################################################################
+###############################################################################
+
+                    #############
+                    # FIGURE 5A,B #
+                    #############
+#GET EMMA'S CODE
+
+                    #############
+                    # FIGURE 5C #
+                    #############
 #r values and length values from EMMA
 filename= 'G:/Behavior study Dec2021/Data figures/figure_4.xlsx'
 CATEG_r_early=[0.275237546,0.560863314,0.352037791,0.482394646,0.369892867,0.385851979,0.484050033,0.38972061,0.355992621]
@@ -2280,268 +2332,3 @@ aov = pg.pairwise_ttests(dv='feature', between='group',
 # 1         group      -      0     1  ...  two-sided  0.047447  2.145 -1.239879
 # 2  time * group  early      0     1  ...  two-sided  0.081851  1.527 -1.133010
 # 3  time * group   late      0     1  ...  two-sided  0.050461  1.816 -1.062862
-###############################################################################
-# Figure 5: sequential
-###############################################################################
-
-###############################################################################
-# within sequence IPI variance (heatmaps - all mice treated equal)
-# ON MICE THAT DID BOTH FR/Var FOLLOWED BY CATEG
-###############################################################################
-sequential_mice=[4219,4224,4225,4226,4222,4230,4231,4239,4234,4240,4241,4229]
-mice=[x for x in FR5_mice if x in sequential_mice]
-file_dir='G:/Behavior study Dec2021/All medpc together'
-master_df2 = create_medpc_master(mice, file_dir)
-
-#drop mouse/days based on google doc notes
-discard_list=[
-[4240, '20220124'], #wrong protocol
-[4224, '20220121'], #wrong protocol
-[4224, '20220124'], #wrong protocol
-[4225, '20220124'], #wrong protocol
-[4226, '20220124'], #wrong protocol
-[4221, '20220121'], #wrong protocol
-[4221, '20220124'], #wrong protocol
-[4230, '20220121'], #wrong protocol
-[4230, '20220124'], #wrong protocol
-[4229, '20220121'], #wrong protocol
-]
-master_df2 = discard_day(master_df2, discard_list)
-
-###############################################################################
-# within sequence IPI variance (heatmaps - all mice treated equal)
-###############################################################################
-All_mouse_heatmap_seq=np.zeros((70,18))
-All_seq_LPrates_FR5=[]
-All_seq_LPrates_CATEG=[]
-counter=0
-for j,mouse in enumerate(np.unique(master_df2['Mouse'])):#enumerate(High_resp_CATEG)   np.unique(master_df['Mouse'])
-    mouse_protocols=[]
-    mouse_df=master_df2[master_df2['Mouse']==mouse]
-    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
-    mouse_heatmap_seq=np.zeros((70,18))
-    seq_day_LPrates_FR5=[]
-    seq_day_LPrates_CATEG=[]
-
-    #first grab the last 10 days of FR5 for each mouse
-    protocol_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarget_FR5']
-
-    for i,date in enumerate(np.unique(protocol_df['Date'])[:10]):
-        date_df=mouse_df[mouse_df['Date']==date]
-        IPIs=np.array(date_df['IPI'].values[0])
-        #find the index of 5 presses preceding each reward
-        rewards=date_df['Reward'].values[0]
-        #LPs=np.array(date_df['Variance'].values[0])
-        # day_rates=[]
-        # for rwd in rewards:
-        #     LP_indices=np.where(LPs<=rwd)[0][-5:]
-        #     seq_duration=LPs[LP_indices[-1]] - LPs[LP_indices[0]]
-        #     day_rates.append(5/seq_duration)
-        LPs=np.array(date_df['Lever'].values[0])
-        day_variances=[]
-        for rwd in rewards:
-            LP_indices=np.where(LPs<=rwd)[0][-5:]
-            IPI_indices=LP_indices[1:]
-            variance=np.var(IPIs[IPI_indices])/np.mean(IPIs[IPI_indices])
-            day_variances.append(variance)
-       
-            
-        seq_day_LPrates_FR5.append(np.log10(day_variances))
-        if len(seq_day_LPrates_FR5[0])<2:
-            seq_data=np.zeros((1,100))
-        else:
-            seq_data,edges=np.histogram(np.log10(day_variances), bins=70, range=(-3,4), density=True)
-        mouse_heatmap_seq[:,i]=seq_data[::-1]
-        
-     #second grab the CATEG data
-    protocol_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
-
-    for k,date in enumerate(np.unique(protocol_df['Date'])[:7]):
-         date_df=mouse_df[mouse_df['Date']==date]
-         IPIs=np.array(date_df['IPI'].values[0])
-         #find the index of 5 presses preceding each reward
-         rewards=date_df['Reward'].values[0]
-         #LPs=np.array(date_df['Variance'].values[0])
-         # day_rates=[]
-         # for rwd in rewards:
-         #     LP_indices=np.where(LPs<=rwd)[0][-5:]
-         #     seq_duration=LPs[LP_indices[-1]] - LPs[LP_indices[0]]
-         #     day_rates.append(5/seq_duration)
-         LPs=np.array(date_df['Lever'].values[0])
-         day_variances=[]
-         for rwd in rewards:
-             LP_indices=np.where(LPs<=rwd)[0][-5:]
-             IPI_indices=LP_indices[1:]
-             variance=np.var(IPIs[IPI_indices])/np.mean(IPIs[IPI_indices])
-             day_variances.append(variance)
-        
-             
-         seq_day_LPrates_CATEG.append(np.log10(day_variances))
-         if len(seq_day_LPrates_CATEG[0])<2:
-             seq_data=np.zeros((1,100))
-         else:
-             seq_data,edges=np.histogram(np.log10(day_variances), bins=70, range=(-3,4), density=True)
-         mouse_heatmap_seq[:,i+k+2]=seq_data[::-1]
-        
-  
-    All_mouse_heatmap_seq=np.add(All_mouse_heatmap_seq,mouse_heatmap_seq)
-    All_seq_LPrates_FR5.append(seq_day_LPrates_FR5)
-    All_seq_LPrates_CATEG.append(seq_day_LPrates_CATEG)
-    counter+=1
-    
-    fig,ax=plt.subplots(1,1, figsize=(5,10))
-    plt.imshow(mouse_heatmap_seq, alpha=0.5, cmap='jet')
-    plt.plot([70-(x*10+30) for x in [np.median(x) for x in seq_day_LPrates_FR5+seq_day_LPrates_CATEG]], color='r') #10=40(bins)/(3-(-1)) (range) +10 (origin=-1) (histogram adjustements)
-    plt.title(str(mouse)+np.unique(mouse_df['Protocol'])[-1])
-    plt.ylabel('IPI (s)')
-    log_values=[float(x) for x in edges[[0,10,20,30,40]]]
-    plt.yticks([0,10,20,30,40],[str(10**x) for x in log_values][::-1])
-    plt.xlabel('Sessions (#)')
-       
-
-
-###############################################################################
-# plot variance starting with first FR5/Va5 and into CATEG
-###############################################################################
-
-fig,ax=plt.subplots(1,1,figsize=(5,5))
-plt.sca(ax)
-All_Variance=np.empty((len(np.unique(master_df2['Mouse'])), 10))
-for i,mouse in enumerate(np.unique(master_df2['Mouse'])):
-    mouse_df = master_df2[master_df2['Mouse']==mouse].reset_index()
-    protocol_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarget_FR5']
-    Mean_variance_across_days=[]
-    for j,date in enumerate(np.unique(protocol_df['Date'])[:10]):
-        date_df=mouse_df[mouse_df['Date']==date]
-        IPIs=np.array(date_df['IPI'].values[0])
-        #find the index of 5 presses preceding each reward
-        rewards=date_df['Reward'].values[0]
-        #LPs=np.array(date_df['Variance'].values[0])
-        # day_rates=[]
-        # for rwd in rewards:
-        #     LP_indices=np.where(LPs<=rwd)[0][-5:]
-        #     seq_duration=LPs[LP_indices[-1]] - LPs[LP_indices[0]]
-        #     day_rates.append(5/seq_duration)
-        LPs=np.array(date_df['Lever'].values[0])
-        day_variances=[]
-        for rwd in rewards:
-            LP_indices=np.where(LPs<=rwd)[0][-5:]
-            IPI_indices=LP_indices[1:]
-            variance=np.var(IPIs[IPI_indices])/np.mean(IPIs[IPI_indices])
-            day_variances.append(variance)
-        Mean_variance_across_days.append(np.median(day_variances))
-  
-    All_Variance[i,:]=Mean_variance_across_days
-    #plt.scatter(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='cornflowerblue',alpha=0.5)
-    plt.plot(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='cornflowerblue',alpha=0.3)
-plt.yscale('log')  
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False) 
-plt.xticks([0,4,9],['1','5','10'],  size=16)
-plt.xlabel('Time on FR5 schedule (days)', size=20)
-plt.ylabel('Median within sequence \n inter-press interval', size=20)
-plt.title(str(len(mice)) + ' mice')
-
-
-mean=np.nanmean(All_Variance, axis=0)
-std=np.nanstd(All_Variance, axis=0)/np.sqrt([np.sum([not math.isnan(x) for x in All_Variance[:,i]]) for i in range(np.shape(All_Variance)[1])] )
-plt.plot(mean, linewidth=3, color='cornflowerblue')
-plt.vlines(range(np.shape(All_Variance)[1]), mean-std, mean+std, color='cornflowerblue', linewidth=3)
-plt.ylim(0.01,100)
-
-fig,ax=plt.subplots(1,1,figsize=(5,5))
-plt.sca(ax)
-All_Variance=np.empty((len(np.unique(master_df2['Mouse'])), 7))
-for i,mouse in enumerate(np.unique(master_df2['Mouse'])):
-    mouse_df = master_df2[master_df2['Mouse']==mouse].reset_index()
-    protocol_df=mouse_df[mouse_df['Protocol']=='MC_magbase_ForcedReward_LongWinVarTarCATEG_FR5']
-    Mean_variance_across_days=[]
-    for j,date in enumerate(np.unique(protocol_df['Date'])[:7]):
-        date_df=mouse_df[mouse_df['Date']==date]
-        IPIs=np.array(date_df['IPI'].values[0])
-        #find the index of 5 presses preceding each reward
-        rewards=date_df['Reward'].values[0]
-        #LPs=np.array(date_df['Variance'].values[0])
-        # day_rates=[]
-        # for rwd in rewards:
-        #     LP_indices=np.where(LPs<=rwd)[0][-5:]
-        #     seq_duration=LPs[LP_indices[-1]] - LPs[LP_indices[0]]
-        #     day_rates.append(5/seq_duration)
-        LPs=np.array(date_df['Lever'].values[0])
-        day_variances=[]
-        for rwd in rewards:
-            LP_indices=np.where(LPs<=rwd)[0][-5:]
-            IPI_indices=LP_indices[1:]
-            variance=np.var(IPIs[IPI_indices])/np.mean(IPIs[IPI_indices])
-            day_variances.append(variance)
-        Mean_variance_across_days.append(np.median(day_variances))
-  
-    All_Variance[i,:]=Mean_variance_across_days
-    #plt.scatter(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='cornflowerblue',alpha=0.5)
-    plt.plot(np.arange(len(Mean_variance_across_days)), Mean_variance_across_days, c='cornflowerblue',alpha=0.3)
-plt.yscale('log')  
-ax.spines['right'].set_visible(False)
-ax.spines['top'].set_visible(False) 
-plt.xticks([0,4,9],['1','5','10'],  size=16)
-plt.xlabel('Time on FR5 schedule (days)', size=20)
-plt.ylabel('Median within sequence \n inter-press interval', size=20)
-plt.title(str(len(mice)) + ' mice')
-
-
-mean=np.nanmean(All_Variance, axis=0)
-std=np.nanstd(All_Variance, axis=0)/np.sqrt([np.sum([not math.isnan(x) for x in All_Variance[:,i]]) for i in range(np.shape(All_Variance)[1])] )
-plt.plot(mean, linewidth=3, color='cornflowerblue')
-plt.vlines(range(np.shape(All_Variance)[1]), mean-std, mean+std, color='cornflowerblue', linewidth=3)
-plt.ylim(0.01,100)
-###############################################################################
-# Example rasters of LPs
-###############################################################################
-def moving_average(a, n=3) :
-    ret = np.cumsum(a, dtype=float)
-    ret[n:] = ret[n:] - ret[:-n]
-    return ret[n - 1:] / n
-
-test_mice=[4229]#[4219, 4225,4230,4239]
-for j,mouse in enumerate(test_mice):
-    mouse_protocols=[]
-    mouse_df=master_df2[master_df2['Mouse']==mouse]
-    mouse_df=mouse_df[mouse_df['Protocol']!='MC_magbase_ForcedReward_LongWinVarTarget_FR1'] #do not count the FR1 early days
-    # if mouse_df['Protocol'].values[0]=='MC_magbase_ForcedReward_LongWinVarTarget_FR5':
-    counter=0
-    Variances=[]
-    for i,date in enumerate(['20211215','20220201']):
-        
-        fig,ax1=plt.subplots(1,1)
-        fig,ax2=plt.subplots(1,1, figsize=(6,3))
-        Range=(0,5)
-        plt.title(mouse)
-        date_df=mouse_df[mouse_df['Date']==date]
-        #find the index of 5 presses preceding each reward
-        rewards=date_df['Reward'].values[0]
-        LPs=np.array(date_df['Lever'].values[0])
-        Presses=np.zeros((len(rewards), 5))
-        Trialwise_LPs=[]
-        for k,rwd in enumerate(rewards):
-            LP_indices=np.where(LPs<=rwd)[0][-5:]
-            trial_LPs=LPs[LP_indices]-LPs[LP_indices[0]]
-            Trialwise_LPs.append(trial_LPs)
-            Presses[k,:]=trial_LPs
-            ax1.scatter(trial_LPs, np.ones_like(trial_LPs)+counter, c=['k','b','y','r','g'])
-            trial_IPI_var=np.var(np.diff(trial_LPs))
-            Variances.append(trial_IPI_var)
-            counter+=1
-        ax1.set_xlim(Range)
-        ax2.scatter(np.arange(len(Variances)), Variances)
-        ax2.plot(np.arange(len(Variances))[3:-3], moving_average(Variances, n=7), color='r')
-        ax2.set_yscale('log')
-        ax2.set_ylim(0.0001, 1000)
-        fig, ax3=plt.subplots(1,1)
-        sns.distplot( np.log10(Variances))
-        plt.ylim(0,0.4)
-        plt.vlines(np.median(np.log10(Variances)), 0,0.4)
-        plt.figure()
-        plt.hist(Presses[:,1], bins=30, range=Range, color='b', alpha=0.5)
-        plt.hist(Presses[:,2], bins=30, range=Range, color='y', alpha=0.5)
-        plt.hist(Presses[:,3], bins=30, range=Range, color='r', alpha=0.5)
-        plt.hist(Presses[:,4], bins=30, range=Range, color='g', alpha=0.5)    
-        

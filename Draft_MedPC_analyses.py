@@ -17,6 +17,7 @@ from sklearn import metrics
 import pickle
 matplotlib.rcParams['pdf.fonttype'] = 42
 matplotlib.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams['font.sans-serif'] = "Arial"
 import numpy.matlib
 sys.path.append('C:/Users/cheveemf/Documents/GitHub\Maxime_Tools')
 sys.path.append('C:/Users/cheveemf/Documents/GitHub\Behavior_VarSeq')
