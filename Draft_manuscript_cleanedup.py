@@ -2233,7 +2233,7 @@ plt.tight_layout()
                     #############
                     # FIGURE 5A,B #
                     #############
-#GET EMMA'S CODE
+#GET EMMA'S CODE: 'magnet.py'
 
                     #############
                     # FIGURE 5C #
